@@ -424,7 +424,7 @@ clicklife.service("musicService", function(){
     this.STREAM_DTMF = "dtmf";
     var asset_url = "/android_asset/www/music/";
     if(cordova.platformId == "browser"){
-        asset_url = "music";
+        asset_url = "music/";
     };
     var now_playing = {};
     var stop_request = false;

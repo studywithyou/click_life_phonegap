@@ -280,6 +280,13 @@ clicklife.service("videoService", function(){
 /*** call service ***/
 clicklife.service("callService", function(musicService){
     window.phonertc = cordova.plugins.phonertc;
+    phonertc.setVideoView({
+        container: document.getElementById('videoContainer'),
+        local: {
+            position: [0, 0],
+            size: [100, 100]
+        }
+    });
     var that = this;
     var sessions = {};// all sessions
     /*** callbacks ***/
@@ -288,6 +295,24 @@ clicklife.service("callService", function(musicService){
     this.onIncomingCallAccepted = function(){};
     this.onCallEnded = function(data){};
     this.onTimeChange = function(time){};
+    /****
+     * Mute audio Stream
+     */
+    this.muteStream= function(dialogId){
+        sessions[dialogId].streams.audio = false;
+        sessions[dialogId].renegotiate();
+        return true;
+    };
+
+    /***
+     * UnMute audio stream
+     */
+    this.unMuteStream = function(dialogId){
+        sessions[dialogId].streams.audio = true;
+        sessions[dialogId].renegotiate();
+        return true;
+    };
+
     /***
      * Listening for incoming calls
      * @param cb
@@ -345,6 +370,7 @@ clicklife.service("callService", function(musicService){
             }
         };
         var session = new phonertc.Session(config);
+        session.streams.video = false;
         session.on('sendMessage', function (data) {
             io.socket.get("/dialog/session_message",{dialogId: dialogId, from:window.globalData.user.id,  data:JSON.stringify(data)});
         });
@@ -401,6 +427,7 @@ clicklife.service("callService", function(musicService){
                     }
                 };
                 var session = new phonertc.Session(config);
+                session.streams.video = false;
                 console.log(session," incoming session");
                 session.on('sendMessage', function (data) {
                     io.socket.get("/dialog/session_message",{dialogId: dialogId, from:window.globalData.user.id,  data:JSON.stringify(data)});
@@ -490,6 +517,8 @@ clicklife.service("musicService", function(){
     this.STREAM_VOICE_CALL = "voice_call";
     this.STREAM_ALARM = "alarm";
     this.STREAM_DTMF = "dtmf";
+    this.MIC_ON = "on";
+    this.MIC_OFF = "off";
     var asset_url = "/android_asset/www/music/";
     if(cordova.platformId == "browser"){
         asset_url = "music/";
@@ -522,6 +551,37 @@ clicklife.service("musicService", function(){
         streamType = type;
         return true;
     };
+    // toggle mute Stream
+    // param type = StreamType
+    this.toggleMute = function(type){
+        if(type != that.STREAM_MUSIC &&
+            type!= that.STREAM_RING &&
+            type!= that.STREAM_NOTIFICATION &&
+            type!= that.STREAM_VOICE_CALL &&
+            type != that.STREAM_ALARM&&
+            type != that.STREAM_DTMF
+        ){
+            type = that.STREAM_MUSIC;
+
+        }
+        return Media.mute_stream(type);
+    };
+
+    /*** togle mute microphone
+     * @param muted string "on" || "off"
+     * ***/
+    this.toggleMicrophone = function(muted){
+
+        return Media.mute_microphone(muted);
+    };
+
+    /*** togle speakerPhone
+     * @param bool state - true = speaker is on, false = speaker is off
+     * ****/
+    this.toggleSpeaker = function(state){
+        return Media.toggle_speaker(state);
+    };
+
     //play sound
     this.play = function(sound, loopSong, loop_interval){
        stop_request = false;
@@ -558,7 +618,6 @@ clicklife.service("musicService", function(){
     };
     //stop playing
     this.stop = function(sound){
-        console.log(now_playing, sound);
         if(typeof(now_playing[sound])!= 'undefined'){
             now_playing[sound].stop();
             now_playing[sound].stop_requested = true;
@@ -1240,7 +1299,7 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
             callService.startTimer($scope.dialogId);
         };
         callService.onTimeChange = function(seconds){
-            console.log("time changed + "+seconds);
+            //console.log("time changed + "+seconds);
             $scope.$apply(function(){
                 $scope.online_time = seconds;
             });
@@ -1278,6 +1337,7 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
     initController();
     $scope.stopCall = function(){
         callService.rejectIncomingCall($scope.dialogId);
+        callService.stopTimer($scope.dialogId);
         window.clearInterval(interval);
 
     };
@@ -1298,6 +1358,9 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
     $scope.call_state = 0; // 0 = start calling
     $scope.userData  = {};
     $scope.online_time = 0; // connection, 1 - connected, 2 speaking, 3 ended
+    $scope.volume_off = false;
+    $scope.mic_off = false;
+
     $("body").addClass("bg_1");
     var initController = function(){
         io.socket.get("/dialog/get_call_data",
@@ -1311,7 +1374,7 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
         callService.onIncomingCallAccepted = function(){
             $scope.call_state = 2; // speaking
             musicService.stop("incoming_call");
-            $scope.$apply();
+
         };
         callService.onCallEnded = function(){
             musicService.stop("incoming_call");
@@ -1326,6 +1389,9 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
             musicService.setStreamType(musicService.STREAM_RING);
             musicService.play("incoming_call",1,400);
             $scope.$apply();
+        };
+        callService.onTimeChange = function(seconds){
+            $scope.online_time = seconds;
         };
         callService.initialize($scope.dialogId);
 
@@ -1342,12 +1408,42 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
 
     $scope.rejectCall = function(){
         callService.rejectIncomingCall($scope.dialogId);
+        musicService.stopAll();
+        musicService.toggleMicrophone(musicService.MIC_ON);
+        musicService.toggleSpeaker(false);
+        window.location.href = "#contacts";
     };
 
     $scope.showChat = function(){
         callService.rejectIncomingCall($scope.dialogId);
         musicService.stopAll();
-        window.location.href = "#contacts";
+        musicService.toggleMicrophone(musicService.MIC_ON);
+        musicService.toggleSpeaker(false);
+        window.location.href = "#dialog/"+$scope.dialogId;
+    };
+
+    $scope.muteSpeakers = function(){
+        if($scope.volume_off == true){
+            // volume on
+            musicService.toggleSpeaker(true);
+            $scope.volume_off = false;
+        }else {
+            //mute
+            musicService.toggleSpeaker(false);
+            $scope.volume_off = true;
+        }
+    };
+
+    $scope.muteMicrophone = function(){
+        if($scope.mic_off == true){
+            $scope.mic_off = false;
+            // on microphone
+            musicService.toggleMicrophone(musicService.MIC_ON);
+        }else{
+            $scope.mic_off = true;
+            //off microphone
+            musicService.toggleMicrophone(musicService.MIC_OFF);
+        }
     };
 
 });

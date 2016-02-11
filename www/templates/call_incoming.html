@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container" ng-if="call_state != 2 || call_state != 3">
     <div class="row">
         <div class="page_overlay">
             <div class="col s12 incoming_call">
@@ -11,13 +11,44 @@
                     <a ng-click="acceptCall()" ng-if="call_state==1"  class="confirm waves-effect waves-green">
                         <i class="material-icons">call</i>
                     </a>
-                    <a ng-click="rejectCall()"  ng-if="call_state==1 || call_state == 2" class="end waves-effect waves-red">
+                    <a ng-click="rejectCall()"  ng-if="call_state==1" class="end waves-effect waves-red">
                         <i class="material-icons ">call_end</i>
                     </a>
-                    <a ng-click="showChat()" ng-if="call_state==1 || call_state == 3 " class="msg waves-effect waves-orange" >
+                    <a ng-click="showChat()" ng-if="call_state==1" class="msg waves-effect waves-orange" >
                         <i class="material-icons">mail_outline</i>
                     </a>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container"  ng-if="call_state == 2 || call_state == 3">
+    <div class="row">
+        <div class="page_overlay">
+            <div class="col s12 incoming_call">
+                <div class="caller_photo">
+                    <img ng-src="{{userData.avatar}}" alt=""/>
+                </div>
+                <div class="cn yellow darken-2">Разговор с {{userData.fio}}</div>
+                <div class="btns dialup">
+                    <a ng-ckick = "muteSpeakers()" class="voff waves-effect waves-green">
+                        <i class="material-icons" ng-if="volume_off">volume_off</i>
+                        <i class="material-icons" ng-if="!volume_off">volume_on</i>
+                    </a>
+                    <a  ng-click="muteMicrophone()" class="mic_off waves-effect waves-red">
+                        <i class="material-icons " ng-if="!mic_off">mic_off</i>
+                        <i class="material-icons " ng-if="mic_off">mic_on</i>
+                    </a>
+                    <a ng-click="showChat()" class="msg waves-effect waves-orange" >
+                        <i class="material-icons">mail_outline</i>
+                    </a>
+                </div>
+            </div>
+            <div class="col caller_name mgt5 s12 " ng-if="online_time">
+                {{online_time}} сек.
+            </div>
+            <div class="button">
+                <a ng-click="rejectCall()" class="btn btn-large red lighten-1 waves-effect waves-light call_action">Завершить</a>
             </div>
         </div>
     </div>

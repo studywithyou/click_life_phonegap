@@ -163,7 +163,7 @@ clicklife.config(function($routeProvider){
             controller:"CallCtrl"
         }).
         when("/incoming_call/:userId/:dialogId",{
-            templateUrl:"templates/incoming_call.html",
+            templateUrl:"templates/call_incoming.html",
             controller:"IncomingCallCtrl"
         }).
         otherwise({
@@ -280,15 +280,36 @@ clicklife.service("videoService", function(){
 /*** call service ***/
 clicklife.service("callService", function(musicService){
     window.phonertc = cordova.plugins.phonertc;
+    var that = this;
     var sessions = {};// all sessions
+    /*** callbacks ***/
+    this.onIncomingCallStarted = function(){};
+    this.onRemoteCallAccepted = function(){};
+    this.onIncomingCallAccepted = function(){};
+    this.onCallEnded = function(data){};
+    this.onTimeChange = function(time){};
     /***
      * Listening for incoming calls
      * @param cb
      */
     this.listenForIncoming = function(cb){
         io.socket.on("incoming_call_request", function(data){
+            console.log(data,"incoming_call_request");
             if(data.initiator !== window.globalData.user.id){
                return  cb(data.initiator, data.dialog);
+            }
+        });
+    };
+
+    /*** call request ***/
+    this.requestOutcomingCall = function(dialogId, initiator, cb){
+        io.socket.get("/dialog/call_request",{
+            dialog: dialogId,
+            initiator:initiator
+        }, function(data){
+            if(data.error || data.user.is_online == '0'){
+                Materialize.toast("Пользователь вышел из сети");
+                cb(data);
             }
         });
     };
@@ -297,7 +318,7 @@ clicklife.service("callService", function(musicService){
         sessions[dialogId].online_time = 0;
         var timer = window.setInterval(function(){
             sessions[dialogId].online_time++;
-            this.onTimeChange(sessions[dialogId].online_time);
+            that.onTimeChange(sessions[dialogId].online_time);
         },1000);
         sessions[dialogId].timer = timer;
     };
@@ -310,6 +331,7 @@ clicklife.service("callService", function(musicService){
 
     /*** init  outcoming session ***/
     this.initSession = function(dialogId){
+        console.log("creating new outcoming call session");
         var config = {
             isInitiator: true,
             turn: {
@@ -331,37 +353,29 @@ clicklife.service("callService", function(musicService){
         });
         session.on("disconnect", function(){
             musicService.setStreamType("system");
-            musicService.play("call_bussy",false,0);
-           this.onCallEnded();
+            musicService.play("call_busy",false,0);
+           that.onCallEnded();
         });
         // init call
         io.socket.get("/dialog/init_remote_call",{
             dialogId: dialogId,
             from: window.globalData.user.id
-        }, function(){
-
-        });
+        }, function(){});
         io.socket.on("session_message", function(data){
             if(data.from != window.globalData.user.id && data.dialogId == dialogId){
                 session.receiveMessage(JSON.parse(data.data));
             }
         });
         io.socket.on('call_accepted', function(data){
+            console.log("OnCallAccepted OUTCom: ", data);
             if(data.from != window.globalData.user.id && data.dialogId == dialogId){
                 session.call();
-                this.onRemoteCallAccepted();
-                this.startTimer(dialogId);
+                that.onRemoteCallAccepted();
+                that.startTimer(dialogId);
             }
         });
         sessions[dialogId] = session;
     };
-    this.onIncomingCallStarted = function(data){
-
-    };
-    this.onRemoteCallAccepted = function(){};
-    this.onIncomingCallAccepted = function(){};
-    this.onCallEnded = function(data){};
-    this.onTimeChange = function(time){};
 
     //init an incoming call
     this.initialize = function(dialogId){
@@ -370,63 +384,63 @@ clicklife.service("callService", function(musicService){
             dialog:dialogId,
             user:window.globalData.user.id
         },function(){
-            io.socket.on("init_remote_call", function(data){
-                if(data.from != window.globalData.user.id && dialogId == data.dialogId){
-                    var config = {
-                        isInitiator: false,
-                        turn: {
-                            host: 'turn:clicklife.link:3478',
-                            username: 'admin',
-                            password: '123'
-                        },
-                        streams: {
-                            audio: true,
-                            video: false
-                        }
-                    };
-                    var session = new phonertc.Session(config);
-                    session.on('sendMessage', function (data) {
-                        io.socket.get("/dialog/session_message",{dialogId: dialogId, from:window.globalData.user.id,  data:JSON.stringify(data)});
-                    });
-                    io.socket.on("session_message", function(data){
-                        if(data.from != window.globalData.user.id && data.dialogId == dialogId){
-                            session.receiveMessage(JSON.parse(data.data));
-                        }
-                    });
-                    session.on("answer", function(){
-                        Console.log("session initialized");
-                    });
-                    session.on("disconnect", function(){
-                        musicService.setStreamType("system");
-                        musicService.play("call_bussy",false,0);
-                        this.onCallEnded();
-                    });
-                    sessions[dialogId] = session;
-                    this.onIncomingCallStarted(data);
-                }
-            });
-
+            console.log("Ready To build Session send to caller");
         });
-
+        io.socket.on("init_remote_call", function(data){
+            if(data.from != window.globalData.user.id && dialogId == data.dialogId){
+                var config = {
+                    isInitiator: false,
+                    turn: {
+                        host: 'turn:clicklife.link:3478',
+                        username: 'admin',
+                        password: '123'
+                    },
+                    streams: {
+                        audio: true,
+                        video: false
+                    }
+                };
+                var session = new phonertc.Session(config);
+                console.log(session," incoming session");
+                session.on('sendMessage', function (data) {
+                    io.socket.get("/dialog/session_message",{dialogId: dialogId, from:window.globalData.user.id,  data:JSON.stringify(data)});
+                });
+                io.socket.on("session_message", function(data){
+                    if(data.from != window.globalData.user.id && data.dialogId == dialogId){
+                        session.receiveMessage(JSON.parse(data.data));
+                    }
+                });
+                session.on("answer", function(){
+                    Console.log("session initialized");
+                });
+                session.on("disconnect", function(){
+                    musicService.setStreamType("system");
+                    musicService.play("call_busy",false,0);
+                    that.onCallEnded();
+                });
+                sessions[dialogId] = session;
+                that.onIncomingCallStarted(data);
+            }
+        });
     };
 
     this.acceptIncomingCall = function(dialogId){
         sessions[dialogId].call();
-        this.startTimer(dialogId);
+        that.startTimer(dialogId);
         io.socket.get("/dialog/accept_call",{
             dialogId: dialogId,
             from: window.globalData.user.id
         });
-        this.onIncomingCallAccepted();
+        that.onIncomingCallAccepted();
     };
     this.rejectIncomingCall = function(dialogId){
         try{
             sessions[dialogId].close();
         }catch(e){
-            sessions[dialogId].disconnect();
+            sessions[dialogId] = {};
         }
-        this.stopTimer(dialogId);
-        this.onCallEnded(dialogId);
+        that.stopTimer(dialogId);
+        that.onCallEnded(dialogId);
     };
 });
 /***
@@ -469,6 +483,7 @@ clicklife.service("imageService", function(){
  * Music service
  */
 clicklife.service("musicService", function(){
+    var that = this;
     this.STREAM_MUSIC = "music";
     this.STREAM_RING = "system";
     this.STREAM_NOTIFICATION = "notification";
@@ -482,17 +497,26 @@ clicklife.service("musicService", function(){
     var now_playing = {};
     var stop_request = false;
     var streamType = this.STREAM_MUSIC;
-
-
+    /***
+     * stop all sounds
+     */
+    this.stopAll = function(){
+        for(var sound in now_playing){
+            try{
+                that.stop(sound);
+            }catch(e){}
+        }
+        return;
+    };
     this.setStreamType = function(type){
-        if(type != this.STREAM_MUSIC &&
-            type!= this.STREAM_RING &&
-            type!= this.STREAM_NOTIFICATION &&
-            type!= this.STREAM_VOICE_CALL &&
-            type != this.STREAM_ALARM&&
-            type != this.STREAM_DTMF
+        if(type != that.STREAM_MUSIC &&
+            type!= that.STREAM_RING &&
+            type!= that.STREAM_NOTIFICATION &&
+            type!= that.STREAM_VOICE_CALL &&
+            type != that.STREAM_ALARM&&
+            type != that.STREAM_DTMF
         ){
-            streamType = this.STREAM_MUSIC;
+            streamType = that.STREAM_MUSIC;
             return false;
         }
         streamType = type;
@@ -973,7 +997,7 @@ clicklife.controller("ContactsCtrl", function($scope){
 /****************************************************************************
  * Chat
  * *******/
-clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $timeout, giftsService, imageService, videoService){
+clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $timeout, giftsService, imageService, videoService, callService){
 
     $('.modal-trigger').leanModal();
 
@@ -1080,7 +1104,9 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
     $scope.emojiMessage={};
 
     initDialog();
-
+    callService.listenForIncoming(function(user, dialog){
+        window.location.href="#incoming_call/"+user+"/"+dialog;
+    });
     var keyups = 0;
     $scope.imTyping = function($event){
         keyups++;
@@ -1191,6 +1217,7 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
     $scope.call_state = 0; // 0 = start calling
     $scope.userData  = {};
     $scope.online_time = 0;
+    var interval;
     var initController = function(){
         io.socket.get("/dialog/get_call_data",
             {user: $scope.userId, initiator: window.globalData.user.id},
@@ -1210,13 +1237,37 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
             $scope.call_state = 1;
             $scope.$apply();
             musicService.stop("outcoming_call");
+            callService.startTimer($scope.dialogId);
         };
         callService.onTimeChange = function(seconds){
+            console.log("time changed + "+seconds);
             $scope.$apply(function(){
                 $scope.online_time = seconds;
             });
         };
+        var connection_tries = 0;
+        var ready_to_build = false;
+        interval = window.setInterval(function(){
+            if(ready_to_build){
+               return window.clearInterval(interval);
+            }else{
+                callService.requestOutcomingCall($scope.dialogId, window.globalData.user.id, function(){});
+            }
+             connection_tries++;
+            if(connection_tries >= 60 && !ready_to_build){
+                window.clearInterval(interval);
+                musicService.setStreamType(musicService.STREAM_RING);
+                musicService.play("call_busy",false,0);
+                window.setTimeout(function(){
+                    window.location.href="#contacts";
+                },500);
+            }
+        },1000);
+
         io.socket.on("ready_to_build_session",function(data){
+            console.log("ready to build session event recieved from callee",data);
+            window.clearInterval(interval);
+            ready_to_build = true;
             if(data.user !== window.globalData.user.id && data.dialog ==  $scope.dialogId){
                 callService.initSession($scope.dialogId);
             }
@@ -1225,13 +1276,14 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
     };
     $("body").addClass("bg_1");
     initController();
-
     $scope.stopCall = function(){
         callService.rejectIncomingCall($scope.dialogId);
+        window.clearInterval(interval);
 
     };
 
     $scope.returnHome = function(){
+        window.clearInterval(interval);
         callService.rejectIncomingCall($scope.dialogId);
         location.href="#contacts";
     };
@@ -1254,9 +1306,9 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
                 $scope.userData = data;
                 console.log(data);
                 $scope.$apply();
-         });
+            });
 
-        callService.onRemoteCallAccepted = function(){
+        callService.onIncomingCallAccepted = function(){
             $scope.call_state = 2; // speaking
             musicService.stop("incoming_call");
             $scope.$apply();
@@ -1267,8 +1319,10 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
             $scope.call_state = 3;
             $scope.$apply();
         };
-        callService.onRemoteCallStarted = function(){
+        callService.onIncomingCallStarted = function(){
+            console.log("Incoming call started");
             $scope.call_state =1; // show buttons;
+
             musicService.setStreamType(musicService.STREAM_RING);
             musicService.play("incoming_call",1,400);
             $scope.$apply();
@@ -1291,7 +1345,9 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
     };
 
     $scope.showChat = function(){
-
+        callService.rejectIncomingCall($scope.dialogId);
+        musicService.stopAll();
+        window.location.href = "#contacts";
     };
 
 });

@@ -3,7 +3,7 @@
         <div class="page_overlay">
             <div class="col s12 incoming_call">
                 <div class="caller_photo">
-                    <img ng-src="userData.avatar" alt=""/>
+                    <img ng-src="{{userData.avatar}}" alt=""/>
                 </div>
                 <div class="cn yellow darken-2" ng-if="call_state == 1">{{userData.fio}} вызывает</div>
                 <div class="cn yellow darken-2" ng-if="call_state == 0">{{userData.fio}} установка соединения... </div>
@@ -14,7 +14,7 @@
                     <a ng-click="rejectCall()"  ng-if="call_state==1 || call_state == 2" class="end waves-effect waves-red">
                         <i class="material-icons ">call_end</i>
                     </a>
-                    <a ng-click="showChat()" ng-if="call_state==3" class="msg waves-effect waves-orange" >
+                    <a ng-click="showChat()" ng-if="call_state==1 || call_state == 3 " class="msg waves-effect waves-orange" >
                         <i class="material-icons">mail_outline</i>
                     </a>
                 </div>

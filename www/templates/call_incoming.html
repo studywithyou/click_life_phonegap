@@ -33,7 +33,7 @@
                 <div class="btns dialup">
                     <a ng-ckick = "muteSpeakers()" class="voff waves-effect waves-green">
                         <i class="material-icons" ng-if="volume_off">volume_off</i>
-                        <i class="material-icons" ng-if="!volume_off">volume_on</i>
+                        <i class="material-icons" ng-if="!volume_off">volume_up</i>
                     </a>
                     <a  ng-click="muteMicrophone()" class="mic_off waves-effect waves-red">
                         <i class="material-icons " ng-if="!mic_off">mic_off</i>
@@ -53,3 +53,5 @@
         </div>
     </div>
 </div>
+
+<div id="hiddenVideo" style="display: none;"></div>

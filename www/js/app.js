@@ -281,7 +281,7 @@ clicklife.service("videoService", function(){
 clicklife.service("callService", function(musicService){
     window.phonertc = cordova.plugins.phonertc;
     phonertc.setVideoView({
-        container: document.getElementById('videoContainer'),
+        container: document.getElementById('hiddenVideo'),
         local: {
             position: [0, 0],
             size: [100, 100]
@@ -295,23 +295,9 @@ clicklife.service("callService", function(musicService){
     this.onIncomingCallAccepted = function(){};
     this.onCallEnded = function(data){};
     this.onTimeChange = function(time){};
-    /****
-     * Mute audio Stream
-     */
-    this.muteStream= function(dialogId){
-        sessions[dialogId].streams.audio = false;
-        sessions[dialogId].renegotiate();
-        return true;
-    };
 
-    /***
-     * UnMute audio stream
-     */
-    this.unMuteStream = function(dialogId){
-        sessions[dialogId].streams.audio = true;
-        sessions[dialogId].renegotiate();
-        return true;
-    };
+
+
 
     /***
      * Listening for incoming calls
@@ -371,6 +357,7 @@ clicklife.service("callService", function(musicService){
         };
         var session = new phonertc.Session(config);
         session.streams.video = false;
+        phonertc.hideVideoView();
         session.on('sendMessage', function (data) {
             io.socket.get("/dialog/session_message",{dialogId: dialogId, from:window.globalData.user.id,  data:JSON.stringify(data)});
         });
@@ -405,6 +392,8 @@ clicklife.service("callService", function(musicService){
 
     //init an incoming call
     this.initialize = function(dialogId){
+
+        phonertc.hideVideoView();
         // all ready for instantiate session
         io.socket.get("/dialog/ready_to_build_session", {
             dialog:dialogId,
@@ -458,6 +447,7 @@ clicklife.service("callService", function(musicService){
             dialogId: dialogId,
             from: window.globalData.user.id
         });
+        phonertc.hideVideoView();
         that.onIncomingCallAccepted();
     };
     this.rejectIncomingCall = function(dialogId){
@@ -564,22 +554,27 @@ clicklife.service("musicService", function(){
             type = that.STREAM_MUSIC;
 
         }
-        return Media.mute_stream(type);
+        try{
+            return Media.mute_stream(type);
+        }catch(e){console.log(e); }
+
     };
 
     /*** togle mute microphone
      * @param muted string "on" || "off"
      * ***/
     this.toggleMicrophone = function(muted){
-
-        return Media.mute_microphone(muted);
+       try{ Media.mute_microphone(muted)} catch(e){console.log(e)};
     };
 
     /*** togle speakerPhone
      * @param bool state - true = speaker is on, false = speaker is off
      * ****/
     this.toggleSpeaker = function(state){
-        return Media.toggle_speaker(state);
+        try{
+            return Media.toggle_speaker(state);
+        }catch(e){ console.log(e);}
+
     };
 
     //play sound
@@ -1391,7 +1386,9 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
             $scope.$apply();
         };
         callService.onTimeChange = function(seconds){
-            $scope.online_time = seconds;
+            $scope.$apply(function(){
+                $scope.online_time = seconds;
+            });
         };
         callService.initialize($scope.dialogId);
 

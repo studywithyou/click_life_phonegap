@@ -1206,6 +1206,33 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
 
 
 });
+
+clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicService, callService){
+    $scope.userId = $routeParams.userId;
+    $scope.dialogId = $routeParams.dialogId;
+    $scope.call_state = 0; // 0 = start calling
+    $scope.userData  = {};
+    $scope.online_time = 0;
+    $("body").addClass("bg_1");
+    var initController = function(){
+        io.socket.get("/dialog/get_call_data",
+            {user: $scope.userId},
+            function(data){
+                $scope.userData = data;
+                console.log(data);
+                $scope.$apply();
+         });
+        musicService.setStreamType(musicService.STREAM_RING);
+        musicService.play("incoming_call",1,400);
+
+        callService.initialize($scope.dialogId);
+
+
+    };
+
+    initController();
+
+});
 clicklife.controller("DialogsCtrl", function($scope, $location){
 
 });

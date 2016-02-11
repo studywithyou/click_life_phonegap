@@ -354,33 +354,40 @@ clicklife.service("callService", function(){
     this.onCallEnded = function(data){};
     this.onTimeChange = function(time){};
     this.initialize = function(dialogId){
-        io.socket.on("init_remote_call", function(data){
-            if(data.from != window.globalData.user.id && dialogId == data.dialogId){
-                var config = {
-                    isInitiator: false,
-                    turn: {
-                        host: 'turn:clicklife.link:3478',
-                        username: 'admin',
-                        password: '123'
-                    },
-                    streams: {
-                        audio: true,
-                        video: false
-                    }
-                };
-                var session = new phonertc.Session(config);
-                session.on('sendMessage', function (data) {
-                    io.socket.get("/dialog/session_message",{dialogId: dialogId, from:window.globalData.user.id,  data:JSON.stringify(data)});
-                });
-                io.socket.on("session_message", function(data){
-                    if(data.from != window.globalData.user.id && data.dialogId == dialogId){
-                        session.receiveMessage(JSON.parse(data.data));
-                    }
-                });
-                sessions[dialogId] = session;
-                this.onIncomingCallStarted(data);
-            }
+        io.socket.get("/dialog/ready_to_build_session", {
+            dialog:dialogId,
+            user:window.globalData.user.id
+        },function(){
+            io.socket.on("init_remote_call", function(data){
+                if(data.from != window.globalData.user.id && dialogId == data.dialogId){
+                    var config = {
+                        isInitiator: false,
+                        turn: {
+                            host: 'turn:clicklife.link:3478',
+                            username: 'admin',
+                            password: '123'
+                        },
+                        streams: {
+                            audio: true,
+                            video: false
+                        }
+                    };
+                    var session = new phonertc.Session(config);
+                    session.on('sendMessage', function (data) {
+                        io.socket.get("/dialog/session_message",{dialogId: dialogId, from:window.globalData.user.id,  data:JSON.stringify(data)});
+                    });
+                    io.socket.on("session_message", function(data){
+                        if(data.from != window.globalData.user.id && data.dialogId == dialogId){
+                            session.receiveMessage(JSON.parse(data.data));
+                        }
+                    });
+                    sessions[dialogId] = session;
+                    this.onIncomingCallStarted(data);
+                }
+            });
+
         });
+
     };
 
     this.acceptIncomingCall = function(dialogId){
@@ -1188,7 +1195,12 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
                 $scope.online_time = seconds;
             });
         };
-        callService.initSession($scope.dialogId);
+        io.socket.on("ready_to_build_session",function(data){
+            if(data.user !== window.globalData.user.id && data.dialog ==  $scope.dialogId){
+                callService.initSession($scope.dialogId);
+            }
+        });
+
     };
     $("body").addClass("bg_1");
     initController();

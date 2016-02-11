@@ -278,7 +278,7 @@ clicklife.service("videoService", function(){
     };
 });
 /*** call service ***/
-clicklife.service("callService", function(){
+clicklife.service("callService", function(musicService){
     window.phonertc = cordova.plugins.phonertc;
     var sessions = {};// all sessions
     /***
@@ -308,7 +308,7 @@ clicklife.service("callService", function(){
         }
     };
 
-    /*** init session ***/
+    /*** init  outcoming session ***/
     this.initSession = function(dialogId){
         var config = {
             isInitiator: true,
@@ -325,6 +325,14 @@ clicklife.service("callService", function(){
         var session = new phonertc.Session(config);
         session.on('sendMessage', function (data) {
             io.socket.get("/dialog/session_message",{dialogId: dialogId, from:window.globalData.user.id,  data:JSON.stringify(data)});
+        });
+        session.on("answer", function(){
+            Console.log("session initialized");
+        });
+        session.on("disconnect", function(){
+            musicService.setStreamType("system");
+            musicService.play("call_bussy",false,0);
+           this.onCallEnded();
         });
         // init call
         io.socket.get("/dialog/init_remote_call",{
@@ -351,9 +359,13 @@ clicklife.service("callService", function(){
 
     };
     this.onRemoteCallAccepted = function(){};
+    this.onIncomingCallAccepted = function(){};
     this.onCallEnded = function(data){};
     this.onTimeChange = function(time){};
+
+    //init an incoming call
     this.initialize = function(dialogId){
+        // all ready for instantiate session
         io.socket.get("/dialog/ready_to_build_session", {
             dialog:dialogId,
             user:window.globalData.user.id
@@ -381,6 +393,14 @@ clicklife.service("callService", function(){
                             session.receiveMessage(JSON.parse(data.data));
                         }
                     });
+                    session.on("answer", function(){
+                        Console.log("session initialized");
+                    });
+                    session.on("disconnect", function(){
+                        musicService.setStreamType("system");
+                        musicService.play("call_bussy",false,0);
+                        this.onCallEnded();
+                    });
                     sessions[dialogId] = session;
                     this.onIncomingCallStarted(data);
                 }
@@ -397,6 +417,7 @@ clicklife.service("callService", function(){
             dialogId: dialogId,
             from: window.globalData.user.id
         });
+        this.onIncomingCallAccepted();
     };
     this.rejectIncomingCall = function(dialogId){
         try{
@@ -1224,7 +1245,7 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
     $scope.dialogId = $routeParams.dialogId;
     $scope.call_state = 0; // 0 = start calling
     $scope.userData  = {};
-    $scope.online_time = 0;
+    $scope.online_time = 0; // connection, 1 - connected, 2 speaking, 3 ended
     $("body").addClass("bg_1");
     var initController = function(){
         io.socket.get("/dialog/get_call_data",
@@ -1234,15 +1255,44 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
                 console.log(data);
                 $scope.$apply();
          });
-        musicService.setStreamType(musicService.STREAM_RING);
-        musicService.play("incoming_call",1,400);
 
+        callService.onRemoteCallAccepted = function(){
+            $scope.call_state = 2; // speaking
+            musicService.stop("incoming_call");
+            $scope.$apply();
+        };
+        callService.onCallEnded = function(){
+            musicService.stop("incoming_call");
+            musicService.play("call_ended",false,0);
+            $scope.call_state = 3;
+            $scope.$apply();
+        };
+        callService.onRemoteCallStarted = function(){
+            $scope.call_state =1; // show buttons;
+            musicService.setStreamType(musicService.STREAM_RING);
+            musicService.play("incoming_call",1,400);
+            $scope.$apply();
+        };
         callService.initialize($scope.dialogId);
 
 
     };
 
     initController();
+    $scope.acceptCall = function(){
+        $scope.call_state = 2;
+        callService.acceptIncomingCall($scope.dialogId);
+        musicService.stop("incoming_call");
+
+    };
+
+    $scope.rejectCall = function(){
+        callService.rejectIncomingCall($scope.dialogId);
+    };
+
+    $scope.showChat = function(){
+
+    };
 
 });
 clicklife.controller("DialogsCtrl", function($scope, $location){

@@ -5,15 +5,16 @@
                 <div class="caller_photo">
                     <img ng-src="userData.avatar" alt=""/>
                 </div>
-                <div class="cn yellow darken-2">{{userData.fio}} вызывает</div>
+                <div class="cn yellow darken-2" ng-if="call_state == 1">{{userData.fio}} вызывает</div>
+                <div class="cn yellow darken-2" ng-if="call_state == 0">{{userData.fio}} установка соединения... </div>
                 <div class="btns">
-                    <a href="#" class="confirm waves-effect waves-green">
+                    <a ng-click="acceptCall()" ng-if="call_state==1"  class="confirm waves-effect waves-green">
                         <i class="material-icons">call</i>
                     </a>
-                    <a href="#" class="end waves-effect waves-red">
+                    <a ng-click="rejectCall()"  ng-if="call_state==1 || call_state == 2" class="end waves-effect waves-red">
                         <i class="material-icons ">call_end</i>
                     </a>
-                    <a href="#" class="msg waves-effect waves-orange" >
+                    <a ng-click="showChat()" ng-if="call_state==3" class="msg waves-effect waves-orange" >
                         <i class="material-icons">mail_outline</i>
                     </a>
                 </div>

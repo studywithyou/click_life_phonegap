@@ -1,0 +1,56 @@
+<nav class="yellow darken-2 z-depth-0">
+    <div class="nav-wrapper">
+        <a href="#" class="center pagename">Регистрация</a>
+        <ul id="nav-mobile" class="left">
+            <li><a href="#login" class="icon-back"></a></li>
+        </ul>
+    </div>
+</nav>
+<div class="row yellow darken-2">
+    <div class="col s12 fu">
+        <input type="file" class="photo_upload" ng-model="photo" multiple="false" />
+    </div>
+</div>
+<div class="container register_page">
+    <div class="row register_form">
+        <form action="">
+        <div class="input-field phone col s12">
+            <label for="pphone">
+                <i class="icon-phone"></i>
+                Ваш телефон
+            </label>
+            <input type="text" ng-model="username" id="pphone" />
+        </div>
+        <div class="input-field uname col s12">
+            <label for="fio">
+                <i class="icon-user"></i>
+                ФИО
+            </label>
+            <input type="text" ng-model="fio"  id="fio"/>
+        </div>
+        <div class="input-field uemail col s12">
+            <label for="uemail">
+                <i class="icon-email"></i>
+                Email
+            </label>
+            <input type="email" id="uemail"  ng-model='email' class="validate"/>
+        </div>
+        <div class="input-field password col s12">
+            <label for="upasswd">
+                <i class="icon-password"></i>
+                Пароль
+            </label>
+            <input type="password" ng-model='password' id="upasswd"/>
+        </div>
+        <div class="rules col s12 ">
+            <input type="checkbox" class="filled-in yellow darken-2 " ng-model="rules" id="filled-in-box" checked="checked" />
+            <label for="filled-in-box">Я прочитал и принимаю условия сервиса</label>
+        </div>
+        <div class="col s12 ">
+            <a href="#page/rules" class="rules_link">Правила сервиса</a>
+        </div>
+        <div class="col s12"><a ng-click="register()" class="btn-large makereg waves-effect waves-teal yellow darken-2">Регистрация</a></div>
+        </form>
+    </div>
+
+</div>

@@ -1,0 +1,27 @@
+<nav class="yellow darken-2 z-depth-0">
+    <div class="nav-wrapper">
+        <a href="#" class="center pagename">Проверка номера</a>
+        <ul id="nav-mobile" class="left">
+            <li><a href="#register" class="icon-back"></a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container register_page">
+
+    <div class="row register_form">
+        <div class="text msg center">
+            Вам отправлено смс с подтверждением
+            на номер {{username}}
+            введите код подтверждения
+        </div>
+        <div class="inp center">
+            <label>Код подтверждения</label>
+            <input type="text" value="" ng-model="confirm_code"/>
+        </div>
+        <div class="col s12" style="    margin-top: 51px;">
+            <a ng-click="confirmuser()" class="btn-large makereg waves-effect waves-teal yellow darken-2">Подтвердить</a>
+        </div>
+    </div>
+
+</div>

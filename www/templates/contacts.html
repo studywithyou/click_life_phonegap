@@ -1,0 +1,219 @@
+<nav class="yellow darken-2 z-depth-0" ng-init="initController()">
+    <div class="nav-wrapper">
+        <a href="#" class="center pagename">Контакты</a>
+
+        <div id="slide-out" class="side-nav">
+            <div class="head yellow darken-2">
+                <div class="title">Click Life</div>
+                <div class="subtitle">Какой то текст</div>
+            </div>
+            <ul>
+                <li>
+                    <a href="#contacts">
+                        <i class="material-icons">contacts</i>
+                        Контакты
+                        <span class="badge">{{contacts.length}}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#!">
+                        <i class="material-icons">chat</i>
+                        Диалоги
+                        <span class="badge">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#contacts">
+                        <i class="material-icons">group_work</i>
+                        Групы
+                        <span class="badge">{{groups.length}}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#cash">
+                        <i class="material-icons">credit_card</i>
+                        Кошелек
+                        <span class="badge clever">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#profile">
+                        <i class="material-icons">settings</i>
+                        Настройки профиля
+                        <span class="badge"></span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#page/rules">
+                        <i class="material-icons">assignment</i>
+                        Правила
+                        <span class="badge"></span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#logout">
+                        <i class="material-icons">exit_to_app</i>
+                        Выход
+                        <span class="badge"></span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div id="slide-search" class="side-nav">
+            <div class="head yellow darken-2">
+                <div class="title">Click Life</div>
+                <div class="subtitle">поиск</div>
+            </div>
+            <div class="col  center" >
+                <div class="input-field">
+                    <input type="search" style="padding-left: 30px;" ng-model="search_string" placeholder="Введите номер или имя"/>
+                </div>
+            </div>
+            <div class="center">
+                <button class="waves-effect waves-light btn" ng-click="search_users()">Найти</button>
+            </div>
+            <div class="center">
+                <ul class="collection">
+                    <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.is_online == 1]" ng-repeat="user in search" >
+                        <img ng-src="{{user.avatar}}" alt="" class="circle">
+                        <span class="title">{{user.fio}}</span>
+                        <a class="btn-floating btn-small waves-effect waves-light red" ng-click="addFromSearch(user)">
+                            <i class="material-icons">add</i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <a href="#" data-activates="slide-out" class="button-collapse"><i class="icon-menu"></i></a>
+        <a href="#" class="search_btn right button-collapse" data-activates="slide-search"><i
+                class="icon-search"></i></a>
+    </div>
+</nav>
+<div class="row yellow darken-2 tbs">
+    <div class="col s12">
+        <ul class="tabs yellow darken-2">
+            <li class="tab col s4"><a href="#online">Онлайн</a></li>
+            <li class="tab col s4"><a class="active" href="#all_contacts">Все контакты</a></li>
+            <li class="tab col s4"><a href="#groups">Группы</a></li>
+        </ul>
+    </div>
+</div>
+<div id="online" class="col s12">
+    <ul class="collection">
+        <li  ng-class="{true:'online collection-item avatar', false:'hide collection-item avatar'}[user.contact.is_online == 1]" ng-repeat="user in contacts" >
+            <img ng-src="{{user.contact.avatar}}" alt="" class="circle" ng-click="chatWith(user)">
+            <span class="title" ng-click="chatWith(user)">{{user.contact.fio}}</span>
+            <p ng-click="chatWith(user)">{{user.contact.username}}</p>
+            <a ng-click="editUserGroup(user)" class="secondary-content group">{{user.group.name}}</a>
+        </li>
+    </ul>
+</div>
+<div id="all_contacts" class="col s12">
+    <ul class="collection">
+        <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.contact.is_online == 1]" ng-repeat="user in contacts" >
+            <img ng-src="{{user.contact.avatar}}" alt="" class="circle" ng-click="chatWith(user)">
+            <span class="title" ng-click="chatWith(user)">{{user.contact.fio}}</span>
+            <p ng-click="chatWith(user)">{{user.contact.username}}</p>
+            <a ng-click="editUserGroup(user)" class="secondary-content group">{{user.group.name}}</a>
+        </li>
+    </ul>
+    <div class="center">
+        <button class="btn-floating btn-large waves-effect waves-light red" ng-click="addContact()">
+            <i class="material-icons">add</i>
+        </button>
+    </div>
+    <!-- Modal Structure -->
+    <div id="modal1" class="modal">
+        <div class="modal-content">
+            <h4 style="color: #555555;">У выбранного пользователя не установлено приложение</h4>
+            <p>Вы хотите отправить пользователю в виде смс ?</p>
+        </div>
+        <div class="modal-footer">
+            <a    ng-click="requestContact()" class="modal-action modal-close waves-effect waves-green btn-flat">Пригласить</a>
+            <a  class="modal-action modal-close waves-effect waves-red btn-flat ">Отменить</a>
+        </div>
+    </div>
+    <div id="modal3" class="modal">
+        <div class="modal-content">
+            <h4 style="color: #555555;">Редактирование группы пользователя</h4>
+            <div class="input-field col s12">
+                <select ng-model="userGroup" class="browser-default" ng-options="group.name for group in groups"></select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a    ng-click="saveUserGroup()" class="modal-action modal-close waves-effect waves-green btn-flat">Сохранить</a>
+            <a  class="modal-action modal-close waves-effect waves-red btn-flat ">Отменить</a>
+        </div>
+    </div>
+</div>
+<div id="groups" class="col s12">
+    <ul class="collection">
+        <li class="collection-item avatar" ng-repeat="group in groups">
+            <i class="material-icons circle">{{group.icon}}</i>
+            <span class="title">{{group.name}}</span>
+            <p>{{group.description}}</p>
+            <a ng-click="editGroup(group)" class="secondary-content group">
+                <i class="material-icons">create</i>
+            </a>
+
+        </li>
+    </ul>
+    <div class="center">
+        <button class="btn-floating btn-large waves-effect waves-light red modal-trigger" data-target="modal2">
+            <i class="material-icons">add</i>
+        </button>
+    </div>
+    <div id="modal2" class="modal">
+        <div class="modal-content">
+            <div class="input-field phone ">
+                <label for="gname">
+                    Название группы
+                </label>
+                <input type="text" ng-model="groupname" id="gname" />
+            </div>
+            <div class="input-field phone ">
+                <label for="gdesc">
+                    Описание группы
+                </label>
+                <input type="text" ng-model="groupdescription" id="gdesc" />
+            </div>
+            <div>
+                <p class="col s3">
+                    <input name="group1" ng-model="groupicon" type="radio" id="test1" value="insert_chart" />
+                    <label for="test1">
+                        <i class="small material-icons">insert_chart</i>
+                    </label>
+                </p>
+                <p class="col s3">
+                    <input name="group1" ng-model="groupicon" type="radio" id="test2" value="info_outline" />
+                    <label for="test2">
+                        <i class="small material-icons">info_outline</i>
+                    </label>
+                </p>
+                <p class="col s3">
+                    <input name="group1" ng-model="groupicon" type="radio" id="test3" value="perm_identity" />
+                    <label for="test3">
+                        <i class="small material-icons">perm_identity</i>
+                    </label>
+                </p>
+                <p class="col s3">
+                    <input name="group1" ng-model="groupicon" type="radio" id="test4" value="language" />
+                    <label for="test4">
+                        <i class="small material-icons">language</i>
+                    </label>
+                </p>
+                <p class="col s3">
+                    <input name="group1" ng-model="groupicon" type="radio" id="test5" value="thumb_up" />
+                    <label for="test5">
+                        <i class="small material-icons">thumb_up</i>
+                    </label>
+                </p>
+
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a    ng-click="addGroup()" class="modal-action modal-close waves-effect waves-green btn-flat">Сохранить</a>
+            <a  class="modal-action modal-close waves-effect waves-red btn-flat ">Отменить</a>
+        </div>
+    </div>
+</div>

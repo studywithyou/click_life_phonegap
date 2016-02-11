@@ -1,0 +1,23 @@
+<div class="container">
+    <div class="row">
+        <div class="page_overlay">
+            <div class="col s12 av">
+                <div class="caller_avatar bg1">
+                    <img ng-src="{{$scope.userData.avatar}}" alt=""/>
+                </div>
+            </div>
+
+            <div  ng-if="call_state==0" class="col caller_name s12">
+                Вызываем {{$scope.userData.fio}} ...
+            </div>
+            <div  ng-if="call_state==1" class="col caller_name s12">
+                Разговор  {{$scope.userData.fio}} ...
+            </div>
+            <div class="button">
+                <a ng-click="stopCall()" class="btn btn-large red lighten-1 waves-effect waves-light call_action">
+                    Завершить
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

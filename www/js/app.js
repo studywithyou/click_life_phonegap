@@ -371,7 +371,11 @@ clicklife.service("callService", function(){
         });
     };
     this.rejectIncomingCall = function(dialogId){
-        sessions[dialogId].close();
+        try{
+            sessions[dialogId].close();
+        }catch(e){
+            sessions[dialogId].disconnect();
+        }
         this.stopTimer(dialogId);
         this.onCallEnded(dialogId);
     };
@@ -469,6 +473,9 @@ clicklife.service("musicService", function(){
                    if(!now_playing[sound].stop_requested){
                        now_playing[sound].play();
                    }
+                   if(now_playing[sound].stop_requested){
+                       now_playing[sound].stop();
+                   }
                }, loop_interval);
            }
        }, streamType);
@@ -478,7 +485,8 @@ clicklife.service("musicService", function(){
     };
     //stop playing
     this.stop = function(sound){
-        if(typeof(now_playing[sound])!= undefined){
+        console.log(now_playing, sound);
+        if(typeof(now_playing[sound])!= 'undefined'){
             now_playing[sound].stop();
             now_playing[sound].stop_requested = true;
         }
@@ -1135,22 +1143,24 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
     $scope.userData  = {};
     $scope.online_time = 0;
     var initController = function(){
-        io.socket.get("/dialog/init_call_to_user",
+        io.socket.get("/dialog/get_call_data",
             {user: $scope.userId, initiator: window.globalData.user.id},
             function(data){
                 $scope.userData = data;
+                console.log(data);
                 $scope.$apply();
             });
         musicService.setStreamType(musicService.STREAM_RING);
-        musicService.play("outcoming_call",true, 350);
+        musicService.play("outcoming_call",true, 450);
         callService.onCallEnded = function(){
             console.log("call ended");
+            musicService.stop("outcoming_call");
             $scope.call_state = 3;
-            $scope.$apply();
         };
         callService.onRemoteCallAccepted = function(){
             $scope.call_state = 1;
             $scope.$apply();
+            musicService.stop("outcoming_call");
         };
         callService.onTimeChange = function(seconds){
             $scope.$apply(function(){
@@ -1164,6 +1174,7 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
 
     $scope.stopCall = function(){
         callService.rejectIncomingCall($scope.dialogId);
+
     };
 
     $scope.returnHome = function(){

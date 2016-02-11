@@ -282,9 +282,13 @@ clicklife.service("callService", function(musicService){
     window.phonertc = cordova.plugins.phonertc;
     phonertc.setVideoView({
         container: document.getElementById('hiddenVideo'),
+        containerParams: {
+            size: [0,0],
+            position:[0,0]
+        },
         local: {
             position: [0, 0],
-            size: [100, 100]
+            size: [0, 0]
         }
     });
     var that = this;
@@ -362,7 +366,7 @@ clicklife.service("callService", function(musicService){
             io.socket.get("/dialog/session_message",{dialogId: dialogId, from:window.globalData.user.id,  data:JSON.stringify(data)});
         });
         session.on("answer", function(){
-            Console.log("session initialized");
+            console.log("session initialized");
         });
         session.on("disconnect", function(){
             musicService.setStreamType("system");
@@ -427,7 +431,7 @@ clicklife.service("callService", function(musicService){
                     }
                 });
                 session.on("answer", function(){
-                    Console.log("session initialized");
+                    console.log("session initialized");
                 });
                 session.on("disconnect", function(){
                     musicService.setStreamType("system");

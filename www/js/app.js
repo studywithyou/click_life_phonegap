@@ -1371,23 +1371,27 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
             });
 
         callService.onIncomingCallAccepted = function(){
-            $scope.call_state = 2; // speaking
-            musicService.stop("incoming_call");
-
+          $scope.$apply(function(){
+              $scope.call_state = 2; // speaking
+              musicService.stop("incoming_call");
+          });
         };
         callService.onCallEnded = function(){
-            musicService.stop("incoming_call");
-            musicService.play("call_ended",false,0);
-            $scope.call_state = 3;
-            $scope.$apply();
+            $scope.$apply(function(){
+                musicService.stop("incoming_call");
+                musicService.play("call_ended",false,0);
+                $scope.call_state = 3;
+            });
         };
         callService.onIncomingCallStarted = function(){
-            console.log("Incoming call started");
-            $scope.call_state =1; // show buttons;
+            $scope.$apply(function(){
+                console.log("Incoming call started");
+                $scope.call_state =1; // show buttons;
 
-            musicService.setStreamType(musicService.STREAM_RING);
-            musicService.play("incoming_call",1,400);
-            $scope.$apply();
+                musicService.setStreamType(musicService.STREAM_RING);
+                musicService.play("incoming_call",1,400);
+            });
+
         };
         callService.onTimeChange = function(seconds){
             $scope.$apply(function(){

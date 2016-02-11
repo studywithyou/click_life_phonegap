@@ -271,6 +271,21 @@ clicklife.service("videoService", function(){
 /*** call service ***/
 clicklife.service("callService", function(){
     var sessions = {};// all sessions
+    this.startTimer = function(dialogId){
+        sessions[dialogId].online_time = 0;
+        var timer = window.setInterval(function(){
+            sessions[dialogId].online_time++;
+            this.onTimeChange(sessions[dialogId].online_time);
+        },1000);
+        sessions[dialogId].timer = timer;
+    };
+
+    this.stopTimer = function(dialogId){
+        if(sessions[dialogId].timer){
+            window.clearInterval(sessions[dialogId].timer);
+        }
+    };
+
     /*** init session ***/
     this.initSession = function(dialogId){
         var config = {
@@ -304,6 +319,8 @@ clicklife.service("callService", function(){
         io.socket.on('call_accepted', function(data){
             if(data.from != window.globalData.user.id && data.dialogId == dialogId){
                 session.call();
+                this.onRemoteCallAccepted();
+                this.startTimer(dialogId);
             }
         });
         sessions[dialogId] = session;
@@ -311,7 +328,9 @@ clicklife.service("callService", function(){
     this.onIncomingCallStarted = function(data){
 
     };
+    this.onRemoteCallAccepted = function(){};
     this.onCallEnded = function(data){};
+    this.onTimeChange = function(time){};
     this.initialize = function(dialogId){
         io.socket.on("init_remote_call", function(data){
             if(data.from != window.globalData.user.id && dialogId == data.dialogId){
@@ -344,6 +363,7 @@ clicklife.service("callService", function(){
 
     this.acceptIncomingCall = function(dialogId){
         sessions[dialogId].call();
+        this.startTimer(dialogId);
         io.socket.get("/dialog/accept_call",{
             dialogId: dialogId,
             from: window.globalData.user.id
@@ -351,6 +371,7 @@ clicklife.service("callService", function(){
     };
     this.rejectIncomingCall = function(dialogId){
         sessions[dialogId].close();
+        this.stopTimer(dialogId);
         this.onCallEnded(dialogId);
     };
 });
@@ -426,7 +447,10 @@ clicklife.service("musicService", function(){
        if(typeof(Media) == "undefined"){
            return false;
        }
-       Media.setStreamType(streamType);
+       try{
+           Media.setStreamType(streamType);
+       } catch(e){}
+
        if(typeof(now_playing[sound])!= 'undefined'){
            now_playing[sound].play();
            return true;
@@ -1105,6 +1129,7 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
     $scope.dialogId = $routeParams.dialogId;
     $scope.call_state = 0; // 0 = start calling
     $scope.userData  = {};
+    $scope.online_time = 0;
     var initController = function(){
         io.socket.get("/dialog/init_call_to_user",
             {user: $scope.userId, initiator: window.globalData.user.id},
@@ -1114,12 +1139,32 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
             });
         musicService.setStreamType(musicService.STREAM_RING);
         musicService.play("outcoming_call",true, 350);
+        callService.onCallEnded = function(){
+            console.log("call ended");
+            $scope.call_state = 3;
+            $scope.$apply();
+        };
+        callService.onRemoteCallAccepted = function(){
+            $scope.call_state = 1;
+            $scope.$apply();
+        };
+        callService.onTimeChange = function(seconds){
+            $scope.$apply(function(){
+                $scope.online_time = seconds;
+            });
+        };
+        callService.initSession($scope.dialogId);
     };
     $("body").addClass("bg_1");
     initController();
 
     $scope.stopCall = function(){
-        callService.st
+        callService.rejectIncomingCall($scope.dialogId);
+    };
+
+    $scope.returnHome = function(){
+        callService.rejectIncomingCall($scope.dialogId);
+        location.href="#contacts";
     };
 
 

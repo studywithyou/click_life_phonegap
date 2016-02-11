@@ -3,19 +3,25 @@
         <div class="page_overlay">
             <div class="col s12 av">
                 <div class="caller_avatar bg1">
-                    <img ng-src="{{$scope.userData.avatar}}" alt=""/>
+                    <img ng-src="{{userData.avatar}}" alt=""/>
                 </div>
             </div>
 
             <div  ng-if="call_state==0" class="col caller_name s12">
-                Вызываем {{$scope.userData.fio}} ...
+                Вызываем {{userData.fio}} ...
             </div>
             <div  ng-if="call_state==1" class="col caller_name s12">
-                Разговор  {{$scope.userData.fio}} ...
+                Разговор  {{userData.fio}} ... ({{online_time}} сек.)
+            </div>
+            <div  ng-if="call_state==3" class="col caller_name s12">
+                Разговор завершен {{userData.fio}} ... ({{online_time}} сек.)
             </div>
             <div class="button">
-                <a ng-click="stopCall()" class="btn btn-large red lighten-1 waves-effect waves-light call_action">
+                <a ng-click="stopCall()"  ng-if="call_state != 3" class="btn btn-large red lighten-1 waves-effect waves-light call_action">
                     Завершить
+                </a>
+                <a ng-click="returnHome()"  ng-if="call_state == 3" class="btn btn-large red lighten-1 waves-effect waves-light call_action">
+                    Вернуться в меню
                 </a>
             </div>
         </div>

@@ -162,6 +162,10 @@ clicklife.config(function($routeProvider){
             templateUrl:"templates/call.html",
             controller:"CallCtrl"
         }).
+        when("/incoming_call/:userId/:dialogId",{
+            templateUrl:"templates/incoming_call.html",
+            controller:"IncomingCallCtrl"
+        }).
         otherwise({
             redirectTo: '/login'
         });
@@ -169,11 +173,10 @@ clicklife.config(function($routeProvider){
 /***
  * initialization
  */
-clicklife.run(function($rootScope,$location){
+clicklife.run(function($rootScope,$location, callService) {
     try{
         StatusBar.hide();
     }catch(e){};
-
     //window.initData();
     $rootScope.$on("$routeChangeSuccess",function(event, current, prev){
 
@@ -234,6 +237,12 @@ clicklife.run(function($rootScope,$location){
         }
 
     });
+
+
+    callService.listenForIncoming(function(user, dialog){
+        window.location.href="#incoming_call/"+user+"/"+dialog;
+    });
+
 });
 
 /***********************************************************************************************************************
@@ -272,6 +281,18 @@ clicklife.service("videoService", function(){
 clicklife.service("callService", function(){
     window.phonertc = cordova.plugins.phonertc;
     var sessions = {};// all sessions
+    /***
+     * Listening for incoming calls
+     * @param cb
+     */
+    this.listenForIncoming = function(cb){
+        io.socket.on("incoming_call_request", function(data){
+            if(data.initiator !== window.globalData.user.id){
+               return  cb(data.initiator, data.dialog);
+            }
+        });
+    };
+
     this.startTimer = function(dialogId){
         sessions[dialogId].online_time = 0;
         var timer = window.setInterval(function(){

@@ -1269,7 +1269,7 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
 
 /*** call ***/
 
-clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, callService){
+clicklife.controller("CallCtrl", function($scope,$timeout, $routeParams, musicService, callService){
     $scope.userId = $routeParams.userId;
     $scope.dialogId = $routeParams.dialogId;
     $scope.call_state = 0; // 0 = start calling
@@ -1280,9 +1280,10 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
         io.socket.get("/dialog/get_call_data",
             {user: $scope.userId, initiator: window.globalData.user.id},
             function(data){
-                $scope.userData = data;
-                console.log(data);
-                $scope.$apply();
+                $scope.$apply(function(){
+                    $scope.userData = data;
+                    console.log(data);
+                });
             });
         musicService.setStreamType(musicService.STREAM_RING);
         musicService.play("outcoming_call",true, 450);
@@ -1292,16 +1293,15 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
             $scope.call_state = 3;
         };
         callService.onRemoteCallAccepted = function(){
-            $scope.call_state = 1;
-            $scope.$apply();
-            musicService.stop("outcoming_call");
-            callService.startTimer($scope.dialogId);
+            $timeout(function(){
+                $scope.call_state = 1;
+                musicService.stop("outcoming_call");
+                callService.startTimer($scope.dialogId);
+            },0);
         };
         callService.onTimeChange = function(seconds){
             //console.log("time changed + "+seconds);
-            $scope.$apply(function(){
-                $scope.online_time = seconds;
-            });
+            $scope.online_time = seconds;
         };
         var connection_tries = 0;
         var ready_to_build = false;
@@ -1351,7 +1351,7 @@ clicklife.controller("CallCtrl", function($scope, $routeParams, musicService, ca
 
 });
 
-clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicService, callService){
+clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams, musicService, callService){
     $scope.userId = $routeParams.userId;
     $scope.dialogId = $routeParams.dialogId;
     $scope.call_state = 0; // 0 = start calling
@@ -1371,32 +1371,26 @@ clicklife.controller("IncomingCallCtrl", function($scope, $routeParams, musicSer
             });
 
         callService.onIncomingCallAccepted = function(){
-          $scope.$apply(function(){
-              $scope.call_state = 2; // speaking
-              musicService.stop("incoming_call");
-          });
+            $timeout(function(){
+                $scope.call_state = 2; // speaking
+                musicService.stop("incoming_call");
+            },0);
         };
         callService.onCallEnded = function(){
-            $scope.$apply(function(){
-                musicService.stop("incoming_call");
-                musicService.play("call_ended",false,0);
-                $scope.call_state = 3;
-            });
+            musicService.stop("incoming_call");
+            musicService.play("call_ended",false,0);
+            $scope.call_state = 3;
         };
         callService.onIncomingCallStarted = function(){
-            $scope.$apply(function(){
-                console.log("Incoming call started");
-                $scope.call_state =1; // show buttons;
+            console.log("Incoming call started");
+            $scope.call_state =1; // show buttons;
 
-                musicService.setStreamType(musicService.STREAM_RING);
-                musicService.play("incoming_call",1,400);
-            });
+            musicService.setStreamType(musicService.STREAM_RING);
+            musicService.play("incoming_call",1,400);
 
         };
         callService.onTimeChange = function(seconds){
-            $scope.$apply(function(){
-                $scope.online_time = seconds;
-            });
+            $scope.online_time = seconds;
         };
         callService.initialize($scope.dialogId);
 

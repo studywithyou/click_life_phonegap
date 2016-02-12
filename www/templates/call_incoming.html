@@ -29,7 +29,8 @@
                 <div class="caller_photo">
                     <img ng-src="{{userData.avatar}}" alt=""/>
                 </div>
-                <div class="cn yellow darken-2">Разговор с {{userData.fio}}</div>
+                <div class="cn yellow darken-2" ng-if="call_state == 2">Разговор с {{userData.fio}}</div>
+                <div class="cn yellow darken-2" ng-if="call_state == 3" >Разговор завершен</div>
                 <div class="btns dialup">
                     <a ng-ckick = "muteSpeakers()" class="voff waves-effect waves-green">
                         <i class="material-icons" ng-if="volume_off">volume_off</i>

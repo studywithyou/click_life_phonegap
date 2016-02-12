@@ -1293,11 +1293,9 @@ clicklife.controller("CallCtrl", function($scope,$timeout, $routeParams, musicSe
             $scope.call_state = 3;
         };
         callService.onRemoteCallAccepted = function(){
-            $timeout(function(){
-                $scope.call_state = 1;
-                musicService.stop("outcoming_call");
-                callService.startTimer($scope.dialogId);
-            },0);
+            $scope.call_state = 1;
+            musicService.stop("outcoming_call");
+            callService.startTimer($scope.dialogId);
         };
         callService.onTimeChange = function(seconds){
             //console.log("time changed + "+seconds);
@@ -1371,10 +1369,8 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
             });
 
         callService.onIncomingCallAccepted = function(){
-            $timeout(function(){
-                $scope.call_state = 2; // speaking
-                musicService.stop("incoming_call");
-            },0);
+            $scope.call_state = 2; // speaking
+            musicService.stop("incoming_call");
         };
         callService.onCallEnded = function(){
             musicService.stop("incoming_call");
@@ -1382,6 +1378,7 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
             $scope.call_state = 3;
         };
         callService.onIncomingCallStarted = function(){
+
             console.log("Incoming call started");
             $scope.call_state =1; // show buttons;
 

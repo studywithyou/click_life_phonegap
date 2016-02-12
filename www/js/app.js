@@ -173,13 +173,13 @@ clicklife.config(function($routeProvider){
 /***
  * initialization
  */
-clicklife.run(function($rootScope,$location, callService) {
+clicklife.run(function($rootScope,$location, callService, userService) {
     try{
         StatusBar.hide();
     }catch(e){};
     //window.initData();
     $rootScope.$on("$routeChangeSuccess",function(event, current, prev){
-
+        userService.setCurrentPage(current);
         if (
             current.templateUrl == "templates/login.html" ||
             current.templateUrl == "templates/confirm_success.html"
@@ -190,64 +190,250 @@ clicklife.run(function($rootScope,$location, callService) {
 
         }
     });
-    io.socket.on('disconnect', function(){
-        var i = setInterval(function(){
-            Materialize.toast("Связь прервана, попытка повторного соединения...",1600);
-            if(io.socket.isConnected()){
-                clearInterval(i);
-            }
-        },1500);
-        setTimeout(function(){
-            clearInterval(i);
-            if(!io.socket.isConnected()){
-                try{
-                    navigator.notification.alert(
-                        'Соединение с сервером потеряно. Проверьте подключение к интернету',  // message
-                        function(){
-                            window.globalData.user = {};
-                            location.href="#login";
-                        },         // callback
-                        'Связь потеряна',            // title
-                        'Ok'                  // buttonName
-                    );
-                }catch(e){
-                    alert("Связь потеряна");
-                    window.globalData.user = {};
-                    location.href="#login";
-                }
-            }
-        },25000);
-
-    });
-    io.socket.on('connect', function(){
-        if(window.globalData.user && window.globalData.user.username){
-            io.socket.post("/user/login",{
-                login: window.globalData.user.username,
-                password: window.globalData.user.password
-            },function(data){
-                if(data.error){
-                    window.globalData.user = {};
-                    location.href="#login";
-                }
-                console.log("Свзяь с сервером восстановлена");
-                Materialize.toast("Свзяь с сервером восстановлена",2000);
+    userService.initSocketEvents(
+        function onSocketConnected(data){
+            console.log("Соединение с сервером успешно установлено");
+            callService.listenForIncoming(function(user, dialog){
+                window.location.href="#incoming_call/"+user+"/"+dialog;
             });
-        }else{
+        },
+        function  onSocketDisconneced(data){
 
         }
+        ,
+        function  onGlobalMessage(data){
+            Materialize.toast(data.message);
+        }
+    );
 
-    });
 
 
-    callService.listenForIncoming(function(user, dialog){
-        window.location.href="#incoming_call/"+user+"/"+dialog;
-    });
 
 });
 
 /***********************************************************************************************************************
  * SERVICES
  **********************************************************************************************************************/
+/*** user service ***/
+clicklife.service("userService", function(musicService,videoService, callService, $rootScope){
+    var that = this;
+    this.userData = "";
+    this.USER_STATUS_ONLINE = "1";
+    this.USER_STATUS_OFFLINE = "0";
+    this.silent_mode = true; // without subscribes
+    this.offline_mode = true; // without internet
+    this.ioStatus = false; // is_socket online
+    this.events = {}; // socket events
+    this.currentPage = "";
+    this.ioWasConnected= false;
+    this.permisssionAllowed =
+        [
+            "templates/login.html",
+            "templates/register.html",
+            "templates/confirm.html",
+            "templates/confirm_success.html"
+        ]; // list of pages allowed to user
+    this.permissionsDenied = [
+        "templates/admin.html"
+    ];
+
+    /*** callbacks ****/
+    this.onStatusChanged = function(status){};
+    this.onLoginFailed = function(data){
+        var allow_to_stay = that.checkPermission();
+        if(allow_to_stay == -1){
+            $location.href="#login";
+        }else{
+            console.log("Staying logged out");
+        };
+    };
+    /*** check perm  (can user to say this page)**/
+    this.checkPermission = function(){
+        var allow_to_stay = that.permisssionAllowed.indexOf(that.currentPage);
+        if(allow_to_stay == -1){
+            return false;
+        }else{
+            console.log("Staying logged out");
+            return true;
+        };
+    };
+    this.setCurrentPage = function(templateUrl){
+
+        if(that.currentPage != templateUrl){
+            // page changes
+            that.currentPage = templateUrl;
+            this.pageChangesCb();
+        }else{
+            // the nsame page
+        };
+
+    };
+
+
+    /*** on page changes ***/
+    this.onPageChanged = function(currentPage){};
+    /***  reload page when url is changes ***/
+    this.pageChangesCb = function(){
+        if(!that.checkPermission()){
+            that.onLoginFailed();
+        }
+        that.onPageChanged(that.currentPage);
+    };
+    /**** initSocketEvents ***/
+    this.initSocketEvents = function(connectedCb, disconnectedCb, globalMessageCb,$location){
+        that.userData = window.globalData.user;
+        if(!window.globalData.user){
+            window.globalData.user = {};
+            that.userData = window.globalData.user;
+        }
+        that.wait_for_io(function ioConnectedCallback(){
+            if(!that.checkPermission()){
+                 that.onLoginFailed();
+            };
+
+            that.on("connect", function(){
+                that.ioStatus = that.is_socket_online();
+                if(that.userData.username){
+                    that.offline_mode = false;
+                    //set me online
+                    that.set_status(that.USER_STATUS_ONLINE,function(){
+                        that.onStatusChanged(that.USER_STATUS_ONLINE);
+                    });
+                    // subscribe to all rooms
+                    that.join_all(function(){
+                        that.silent_mode = false;
+                    });
+
+                }else{
+                    that.authUser(function(isSuccess){
+                        if(isSuccess){
+                            that.userData = window.globalData.user;
+                            that.offline_mode = false;
+                            //set me online
+                            that.set_status(that.USER_STATUS_ONLINE,function(){
+                                that.onStatusChanged(that.USER_STATUS_ONLINE);
+                            });
+                            // subscribe to all rooms
+                            that.join_all(function(){
+                                that.silent_mode = false;
+                            });
+                        }else{
+                            that.offline_mode = true;
+                            window.globalData.user = {};
+                            that.onStatusChanged(that.USER_STATUS_OFFLINE);
+                            that.onLoginFailed(); //default on fail action
+                        }
+                    });
+                }
+                connectedCb();
+                // reconnect to event listening //
+                if(that.ioWasConneccted){
+                    that.reloadEvents();
+                }else{
+                    that.ioWasConnected = false;
+                };
+
+            });
+            that.on("disconnect", function(){
+                console.log("Пропало соединение");
+                that.offline_mode = true;
+                that.silent_mode = true;
+                that.onStatusChanged(that.USER_STATUS_OFFLINE)
+                that.ioStatus = that.is_socket_online();
+                disconnectedCb();
+                that.wait_for_io(function(){
+                    return that.initSocketEvents(connectedCb, disconnectedCb, globalMessageCb, $location);
+                });
+            });
+        });
+
+    };
+
+    /*** reload events on REstart ***/
+    this.reloadEvents = function(cb){
+        that.wait_for_io(function(){
+            for(var eventName in that.events){
+                that.on(eventName, that.events[eventName]);
+            }
+            cb();
+        });
+    };
+    /*** subscribe to socket events ***/
+    this.on = function(eventName, cb){
+        that.wait_for_io(function(){
+            that.events["eventName"] = cb;
+            io.socket.on(eventName, cb);
+        });
+    };
+
+    /*** inspect for socket is connected ***/
+    this.wait_iterations = 0;
+    this.wait_for_io = function(cb){
+        that.ioStatus = io.socket.isConnected();
+        if(!that.ioStatus){
+            var interval = window.setInterval(function(){
+                that.ioStatus = that.is_socket_online();
+                that.wait_iterations++;
+                if(that.ioStatus){
+                    window.clearInterval(interval);
+                    cb();
+                }
+            },1000);
+        }else{
+            cb();
+        }
+    };
+
+    /*** isSocketOnline ***/
+    this.is_socket_online = function(){
+        return io.socket.isConnected();
+    };
+
+    /*** auth user ****/
+    this.authUser = function(cb){
+        that.userData = window.globalData.user;
+        var password = that.userData;
+        var username = that.userData;
+        io.socket.post("/user/login",{
+            login: username,
+            password: password
+        },function(data){
+            if(data.error){
+                return cb(false); // auth failed
+            }
+            that.userData = data;
+            cb(true); // auth ok
+        });
+    };
+
+    /*** set User Status ***/
+    this.set_status = function(status, cb){
+        io.socket.get("/user/update_status",{ user: window.globalData.user.id, status: status}, function(){
+            cb();
+        });
+    };
+    /*** Subscribes to all socket events ***/
+    this.join_all = function(cb){
+        io.socket.get("/user/join_all_rooms",{user:that.userData.id}, function(){
+            that.silent_mode = false;
+            cb();
+        });
+    };
+
+    /*** Leave all socket rooms ***/
+    this.leave_all = function(cb){
+        io.socket.get("/user/leave_all_rooms",{user:that.userData.id}, function(){
+            that.silent_mode = true;
+            cb();
+        });
+    };
+
+
+
+
+
+});
+
 /***
  * Video Service
  */
@@ -1293,13 +1479,17 @@ clicklife.controller("CallCtrl", function($scope,$timeout, $routeParams, musicSe
             $scope.call_state = 3;
         };
         callService.onRemoteCallAccepted = function(){
+
             $scope.call_state = 1;
             musicService.stop("outcoming_call");
             callService.startTimer($scope.dialogId);
         };
         callService.onTimeChange = function(seconds){
             //console.log("time changed + "+seconds);
-            $scope.online_time = seconds;
+            $scope.$apply(function(){
+                $scope.online_time = seconds;
+            });
+
         };
         var connection_tries = 0;
         var ready_to_build = false;
@@ -1327,6 +1517,10 @@ clicklife.controller("CallCtrl", function($scope,$timeout, $routeParams, musicSe
             if(data.user !== window.globalData.user.id && data.dialog ==  $scope.dialogId){
                 callService.initSession($scope.dialogId);
             }
+
+            if(callService.getSession($scope.dialogId)){
+                console.log($scope.dialogId);
+            }
         });
 
     };
@@ -1349,7 +1543,13 @@ clicklife.controller("CallCtrl", function($scope,$timeout, $routeParams, musicSe
 
 });
 
-clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams, musicService, callService){
+clicklife.controller("IncomingCallCtrl", function($scope,
+                                                  $timeout,
+                                                  $routeParams,
+                                                  musicService,
+                                                  callService,
+                                                  userService
+){
     $scope.userId = $routeParams.userId;
     $scope.dialogId = $routeParams.dialogId;
     $scope.call_state = 0; // 0 = start calling
@@ -1357,7 +1557,6 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
     $scope.online_time = 0; // connection, 1 - connected, 2 speaking, 3 ended
     $scope.volume_off = false;
     $scope.mic_off = false;
-
     $("body").addClass("bg_1");
     var initController = function(){
         io.socket.get("/dialog/get_call_data",
@@ -1369,6 +1568,7 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
             });
 
         callService.onIncomingCallAccepted = function(){
+
             $scope.call_state = 2; // speaking
             musicService.stop("incoming_call");
         };
@@ -1378,23 +1578,38 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
             $scope.call_state = 3;
         };
         callService.onIncomingCallStarted = function(){
-
-            console.log("Incoming call started");
-            $scope.call_state =1; // show buttons;
-
             musicService.setStreamType(musicService.STREAM_RING);
             musicService.play("incoming_call",1,400);
+            try{
+                $scope.$apply(function(){
+                    console.log("Incoming call started");
+                    $scope.call_state =1; // show buttons;
+                });
+            }catch (e){
+                console.log("Incoming call started");
+                $scope.call_state =1; // show buttons;
+            }
 
         };
         callService.onTimeChange = function(seconds){
-            $scope.online_time = seconds;
+            $scope.$apply(function(){
+                $scope.online_time = seconds;
+            });
         };
         callService.initialize($scope.dialogId);
-
-
     };
 
-    initController();
+    userService.wait_for_io(function(){
+        initController();
+        userService.onPageChanged = function(currentPage){
+            if(currentPage !== "templates/call_incoming.html"){
+                if($scope.call_state != 0){
+                    $scope.rejectCall();
+                };
+            };
+          };
+    });
+
     $scope.acceptCall = function(){
         $scope.call_state = 2;
         callService.acceptIncomingCall($scope.dialogId);

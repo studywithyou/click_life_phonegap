@@ -27,7 +27,7 @@ var jqComponents = {
                 mouse_is_inside=false;
             });
             $("body").click(function(){
-                console.log(visible, mouse_is_inside);
+
                 if(visible && !mouse_is_inside){
                    hide();
                 }
@@ -631,8 +631,8 @@ clicklife.service("callService", function(musicService, $interval){
 
 
     /*** get session by id ***/
-    this.getSession = function(dialogId){
-        return sessions[dialogId];
+    this.getSession = function(dialogId,cb){
+        return cb(sessions[dialogId]);
     };
     /***
      * Listening for incoming calls
@@ -1648,13 +1648,13 @@ clicklife.controller("CallCtrl", function($scope,$timeout,$interval, $routeParam
                 callService.requestOutcomingCall($scope.dialogId, window.globalData.user.id, function(){});
             }
              connection_tries++;
-            if(connection_tries >= 10 && !ready_to_build){
+            if(connection_tries >= 60 && !ready_to_build){
                 $interval.cancel(interval);
                 musicService.setStreamType(musicService.STREAM_RING);
                 musicService.play("call_busy",false,0);
                 $timeout(function(){
-                    $location.href="#contacts";
-                },500);
+                    $location.href="#dialog/"+$scope.dialogId;
+                },700);
             }
         },1000);
 
@@ -1665,24 +1665,37 @@ clicklife.controller("CallCtrl", function($scope,$timeout,$interval, $routeParam
             if(data.user !== window.globalData.user.id && data.dialog ==  $scope.dialogId){
                 callService.initSession($scope.dialogId);
             }
-            if(callService.getSession($scope.dialogId)){
-                console.log($scope.dialogId);
-            }
+            callService.getSession($scope.dialogId, function(session){
+               console.log(session);
+                callService.initSession($scope.dialogId);
+            });
         });
 
     };
     $("body").addClass("bg_1");
     initController();
     $scope.stopCall = function(){
-        callService.rejectIncomingCall($scope.dialogId);
-        callService.stopTimer($scope.dialogId);
-        $interval.cancel(interval);
+        callService.getSession($scope.dialogId, function(session){
+            session = {};
+            callService.rejectIncomingCall($scope.dialogId);
+            musicService.stopAll();
+            callService.stopTimer($scope.dialogId);
+            $interval.cancel(interval);
+            musicService.toggleMicrophone(musicService.MIC_ON);
+            musicService.toggleSpeaker(false);
+            io.socket.get("/dialog/add_message",{
+                dialog: $scope.dialogId,
+                text:"Разговор завершен. Продолжительность: "+$scope.online_time
+            }, function(){
+                $location.href = "#dialog/"+$scope.dialogId;
+            });
+
+        });
+
     };
 
     $scope.returnHome = function(){
-        window.clearInterval(interval);
-        callService.rejectIncomingCall($scope.dialogId);
-        location.href="#contacts";
+        $scope.stopCall();
     };
 
 
@@ -1690,6 +1703,7 @@ clicklife.controller("CallCtrl", function($scope,$timeout,$interval, $routeParam
 });
 
 clicklife.controller("IncomingCallCtrl", function($scope,
+                                                  $location,
                                                   $timeout,
                                                   $routeParams,
                                                   musicService,
@@ -1714,7 +1728,6 @@ clicklife.controller("IncomingCallCtrl", function($scope,
             });
 
         callService.onIncomingCallAccepted = function(){
-
             $scope.call_state = 2; // speaking
             musicService.stop("incoming_call");
         };
@@ -1767,17 +1780,29 @@ clicklife.controller("IncomingCallCtrl", function($scope,
     $scope.rejectCall = function(){
         callService.rejectIncomingCall($scope.dialogId);
         musicService.stopAll();
+        callService.stopTimer($scope.dialogId);
         musicService.toggleMicrophone(musicService.MIC_ON);
         musicService.toggleSpeaker(false);
-        $location.href = "#dialog/"+$scope.dialogId;
+        io.socket.get("/dialog/add_message",{
+            dialog: $scope.dialogId,
+            text:"Разговор завершен. Продолжительность: "+$scope.online_time
+        }, function(){
+            $location.href = "#dialog/"+$scope.dialogId;
+        });
     };
 
     $scope.showChat = function(){
         callService.rejectIncomingCall($scope.dialogId);
         musicService.stopAll();
+        callService.stopTimer($scope.dialogId);
         musicService.toggleMicrophone(musicService.MIC_ON);
         musicService.toggleSpeaker(false);
-        $location.href = "#dialog/"+$scope.dialogId;
+        io.socket.get("/dialog/add_message",{
+            dialog: $scope.dialogId,
+            text:"Разговор завершен. Продолжительность: "+$scope.online_time
+        }, function(){
+            $location.href = "#dialog/"+$scope.dialogId;
+        });
     };
 
     $scope.muteSpeakers = function(){

@@ -68,7 +68,7 @@
   <plugin name="cordova-plugin-whitelist" version="1"/>
   <plugin name="com.ququplay.websocket.websocket" spec="0.1.0" source="pgb" />
   <plugin name="phonegap-phonertc"  source="npm" version="2.0.2"/>
-  <plugin name="cordova-plugin-media-extended" source="npm" version="2.2.7"></plugin>
+  <plugin name="cordova-plugin-media-extended" source="npm" version="2.2.9"></plugin>
   <plugin name="com.badrit.contactpicker" spec="0.1.0" source="pgb" />
 
   <plugin name="com.footprint.cordova.plugin.local-notification" spec="0.8.0" source="pgb" />

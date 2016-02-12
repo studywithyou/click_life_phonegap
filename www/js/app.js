@@ -1074,13 +1074,11 @@ clicklife.controller("ContactsCtrl", function($scope,musicService, callService){
 clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $timeout, giftsService, imageService, videoService, callService){
 
     $('.modal-trigger').leanModal();
-
     jqComponents.initTogler();
     $(".fancybox_iframe").fancybox();
     $timeout(function(){
         $('.dropdown-button').dropdown();
     },false,100);
-
     // initialization //
     var initDialog = function(){
         io.socket.get("/dialog/get_messages",{dialog: $scope.dialogId}, function(data){
@@ -1176,7 +1174,6 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
     $scope.messageText = "";
     $scope.gifts = [];
     $scope.emojiMessage={};
-
     initDialog();
     callService.listenForIncoming(function(user, dialog){
         window.location.href="#incoming_call/"+user+"/"+dialog;
@@ -1286,7 +1283,6 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
 });
 
 /*** call ***/
-
 clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParams, musicService, callService){
     $scope.userId = $routeParams.userId;
     $scope.dialogId = $routeParams.dialogId;
@@ -1365,7 +1361,6 @@ clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParam
         });
 
     };
-
     $scope.returnHome = function(){
         callService.rejectIncomingCall($scope.dialogId);
         musicService.stopAll();
@@ -1379,11 +1374,7 @@ clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParam
             $location.href = "#dialog/"+$scope.dialogId;
         });
     };
-
-
-
 });
-
 clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams, musicService, callService, $location){
     $scope.userId = $routeParams.userId;
     $scope.dialogId = $routeParams.dialogId;
@@ -1392,7 +1383,6 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
     $scope.online_time = 0; // connection, 1 - connected, 2 speaking, 3 ended
     $scope.volume_off = false;
     $scope.mic_off = false;
-
     $("body").addClass("bg_1");
     var initController = function(){
         io.socket.get("/dialog/get_call_data",
@@ -1436,7 +1426,6 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
 
 
     };
-
     initController();
     $scope.acceptCall = function(){
         $scope.call_state = 2;
@@ -1444,7 +1433,6 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
         musicService.stop("incoming_call");
 
     };
-
     $scope.rejectCall = function(){
         callService.rejectIncomingCall($scope.dialogId);
         musicService.stopAll();
@@ -1458,7 +1446,6 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
             $location.href = "#dialog/"+$scope.dialogId;
         });
     };
-
     $scope.showChat = function(){
         callService.rejectIncomingCall($scope.dialogId);
         musicService.stopAll();
@@ -1472,7 +1459,6 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
             $location.href = "#dialog/"+$scope.dialogId;
         });
     };
-
     $scope.muteSpeakers = function(){
         if($scope.volume_off == true){
             // volume on
@@ -1484,7 +1470,6 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
             $scope.volume_off = true;
         }
     };
-
     $scope.muteMicrophone = function(){
         if($scope.mic_off == true){
             $scope.mic_off = false;
@@ -1496,7 +1481,6 @@ clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams
             musicService.toggleMicrophone(musicService.MIC_OFF);
         }
     };
-
 });
 clicklife.controller("DialogsCtrl", function($scope, $location){
 

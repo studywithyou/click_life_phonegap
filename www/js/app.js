@@ -1,14 +1,7 @@
 
 
 var globalData = {
-    set user(value){
-        var j =  JSON.stringify( value );
-        window.localStorage.setItem("user",j);
-    },
-    get user(){
-        var r = JSON.parse(window.localStorage.getItem("user"));
-        return r?r:false;
-    }
+
 };
 var jqComponents = {
     toggler: function(){
@@ -116,55 +109,68 @@ clicklife.config(function($routeProvider){
     $routeProvider.
         when('/login', {
             templateUrl: 'templates/login.html',
-            controller: 'LoginCtrl'
+            controller: 'LoginCtrl',
+            freeAccess:true,
         }).
         when('/logout', {
             templateUrl: 'templates/logout.html',
-            controller: 'LogoutCtrl'
+            controller: 'LogoutCtrl',
+            freeAccess:false
         }).
         when("/register",{
             templateUrl: 'templates/register.html',
-            controller:'RegisterCtrl'
+            controller:'RegisterCtrl',
+            freeAccess:true
         }).
         when("/confirmation",{
             templateUrl: 'templates/confirm.html',
-            controller:'ConfirmCtrl'
+            controller:'ConfirmCtrl',
+            freeAccess:true
         }).
         when("/confirmation_success",{
             templateUrl: 'templates/confirm_success.html',
-            controller:'ConfirmCtrl'
+            controller:'ConfirmCtrl',
+            freeAccess:false
         }).
         when("/contacts",{
             templateUrl:'templates/contacts.html',
-            controller:'ContactsCtrl'
+            controller:'ContactsCtrl',
+            freeAccess:false
         }).
         when("/dialog/:dialogId",{
             templateUrl:'templates/chat.html',
-            controller:'ChatCtrl'
+            controller:'ChatCtrl',
+            freeAccess:false
         }).
         when("/profile",{
             templateUrl:'templates/profile.html',
-            controller:'ProfileCtrl'
+            controller:'ProfileCtrl',
+            freeAccess:false
         }).
         when("/page/:pageName",{
             templateUrl:'templates/page.html',
-            controller:'PageCtrl'
+            controller:'PageCtrl',
+            freeAccess:true
         }).
         when("/cash",{
             templateUrl:'templates/cash.html',
-            controller:'CashCtrl'
+            controller:'CashCtrl',
+            freeAccess:false
         }).
         when("/dialogs",{
             templateUrl:'templates/dialogs.html',
-            controller:'DialogsCtrl'
+            controller:'DialogsCtrl',
+            freeAccess:false
         }).
         when("/call/:userId/:dialogId",{
             templateUrl:"templates/call.html",
-            controller:"CallCtrl"
+            controller:"CallCtrl",
+            freeAccess:false
         }).
         when("/incoming_call/:userId/:dialogId",{
             templateUrl:"templates/call_incoming.html",
-            controller:"IncomingCallCtrl"
+            controller:"IncomingCallCtrl",
+            freeAccess:false
         }).
         otherwise({
             redirectTo: '/login'
@@ -179,7 +185,38 @@ clicklife.run(function($rootScope,$location, callService, userService) {
     }catch(e){};
     //window.initData();
     $rootScope.$on("$routeChangeSuccess",function(event, current, prev){
-        userService.setCurrentPage(current);
+
+        try{
+            var access = current.$$route.freeAccess;
+            if(typeof(current.$$route.freeAccess)!="undefined"){
+                access = current.$$route.freeAccess;
+            }else{
+                if(typeof(current.freeAccess)!="undefined"){
+                    access = current.freeAccess;
+                }else{
+
+                }
+            }
+            var template = current.$$route.loadedTemplateUrl;
+            if(!template){
+                template =  current.$$route.templateUrl;
+            }
+            if(!template){
+                template = current.templateUrl;
+            }
+            userService.setCurrentPage(template, function currentPageChanged(){
+                userService.checkPermission(access, function(permissions){
+                    if(!permissions){
+                        $location.href="#login";
+                    }else{
+                      return true;
+                    }
+                });
+
+            });
+        }catch(e){
+            console.log("update page error",e);
+        }
         if (
             current.templateUrl == "templates/login.html" ||
             current.templateUrl == "templates/confirm_success.html"
@@ -190,14 +227,16 @@ clicklife.run(function($rootScope,$location, callService, userService) {
 
         }
     });
+
     userService.initSocketEvents(
-        function onSocketConnected(data){
+        function onSocketConnected(){
             console.log("Соединение с сервером успешно установлено");
+
             callService.listenForIncoming(function(user, dialog){
-                window.location.href="#incoming_call/"+user+"/"+dialog;
+               $location.href="#incoming_call/"+user+"/"+dialog;
             });
         },
-        function  onSocketDisconneced(data){
+        function  onSocketDisconneced(){
 
         }
         ,
@@ -205,19 +244,29 @@ clicklife.run(function($rootScope,$location, callService, userService) {
             Materialize.toast(data.message);
         }
     );
-
-
-
-
 });
 
 /***********************************************************************************************************************
  * SERVICES
  **********************************************************************************************************************/
 /*** user service ***/
-clicklife.service("userService", function(musicService,videoService, callService, $rootScope){
+clicklife.service("userService", function(musicService,videoService, callService, $rootScope,$location, $timeout,$interval){
     var that = this;
-    this.userData = "";
+
+
+    this.storage = {
+        set user(value){
+            var j =  JSON.stringify( value );
+            window.localStorage.setItem("user",j);
+            window.globalData.user = value;
+            that.onUserUpdated( value );
+        },
+        get user(){
+            var r = JSON.parse(window.localStorage.getItem("user"));
+            window.globalData.user = r;
+            return r?r:false;
+        }
+    };
     this.USER_STATUS_ONLINE = "1";
     this.USER_STATUS_OFFLINE = "0";
     this.silent_mode = true; // without subscribes
@@ -225,160 +274,202 @@ clicklife.service("userService", function(musicService,videoService, callService
     this.ioStatus = false; // is_socket online
     this.events = {}; // socket events
     this.currentPage = "";
+    this.permissionsGranted = false;
     this.ioWasConnected= false;
-    this.permisssionAllowed =
-        [
-            "templates/login.html",
-            "templates/register.html",
-            "templates/confirm.html",
-            "templates/confirm_success.html"
-        ]; // list of pages allowed to user
-    this.permissionsDenied = [
-        "templates/admin.html"
-    ];
+    this.disconnected_times = 0;
+    this.updateStatusInterval = 0;
+    this.joinAllInterval = false;
+    this.joined_times = 0;
 
     /*** callbacks ****/
-    this.onStatusChanged = function(status){};
-    this.onLoginFailed = function(data){
-        var allow_to_stay = that.checkPermission();
-        if(allow_to_stay == -1){
-            $location.href="#login";
-        }else{
-            console.log("Staying logged out");
-        };
-    };
-    /*** check perm  (can user to say this page)**/
-    this.checkPermission = function(){
-        var allow_to_stay = that.permisssionAllowed.indexOf(that.currentPage);
-        if(allow_to_stay == -1){
-            return false;
-        }else{
-            console.log("Staying logged out");
-            return true;
-        };
-    };
-    this.setCurrentPage = function(templateUrl){
+    this.onUserUpdated = function(user){};
+    this.onSocketConnected = function(){
 
+    };
+    this.onSocketDisconnected = function(){
+        console.log("Разрыв связи, подключаемся заново");
+        that.offline_mode = true;
+        that.wait_for_io(function(){
+            that.initSocketEvents(function(){},function(){},function(){});
+            that.offline_mode = false;
+        });
+
+    };
+    this.onSocketReconnected = function(){};
+    this.onEventsReloaded = function(){};
+    this.onStatusChanged = function(status){};
+    this.onLoginFailed = function(data){};
+    this.onStarted = function(){};
+    this.onAccessSuccess = function(){
+        that.statusAutoUpdate(5000);
+        that.joinAll(function(){});
+    };
+    this.onAccessDenied = function(){
+        $interval.cancel(that.updateStatusInterval);
+        $interval.cancel(that.joinAllInterval);
+        that.storage.user = {};
+        that.leave_all(function(){
+            io.socket.removeAllListeners();
+
+        });
+    };
+    this.onJoinedAll = function(){};
+    this.onLeavedAll = function(){};
+    this.onLoginSuccess = function(){
+
+    };
+    this.onEventCalled = function(eventName, data, cb){
+         console.log(eventName,data, cb);
+    };
+    this.onEventUnsubscribe = function(eventName){};
+    this.onEventRegistered = function(eventName, data){};
+
+
+    /*** check perm  (can user to say this page)**/
+    this.checkPermission = function(freeAccess, cb){
+        var access = false;
+        that.isLoggedIn(function(result){
+            if(result == true){
+                that.onAccessSuccess();
+                access =  true;
+            }else{
+                access =  freeAccess ? true: false;
+                that.permissionsGranted = access;
+                if(!access){
+                    that.onAccessDenied();
+                };
+                return cb(access);
+            }
+        });
+    };
+
+    /*** set current page ***/
+    this.setCurrentPage = function(templateUrl, cb){
+        templateUrl = templateUrl.replace("templates/", "");
+        templateUrl = templateUrl.replace(".html", "");
         if(that.currentPage != templateUrl){
             // page changes
             that.currentPage = templateUrl;
             this.pageChangesCb();
         }else{
-            // the nsame page
+            // the same
+            this.pageChangesCb();
         };
-
+        cb();
     };
-
 
     /*** on page changes ***/
     this.onPageChanged = function(currentPage){};
     /***  reload page when url is changes ***/
     this.pageChangesCb = function(){
-        if(!that.checkPermission()){
-            that.onLoginFailed();
-        }
+        // join all rooms on every page
+
         that.onPageChanged(that.currentPage);
     };
     /**** initSocketEvents ***/
-    this.initSocketEvents = function(connectedCb, disconnectedCb, globalMessageCb,$location){
-        that.userData = window.globalData.user;
-        if(!window.globalData.user){
-            window.globalData.user = {};
-            that.userData = window.globalData.user;
-        }
-        that.wait_for_io(function ioConnectedCallback(){
-            if(!that.checkPermission()){
-                 that.onLoginFailed();
-            };
-
-            that.on("connect", function(){
-                that.ioStatus = that.is_socket_online();
-                if(that.userData.username){
-                    that.offline_mode = false;
-                    //set me online
-                    that.set_status(that.USER_STATUS_ONLINE,function(){
-                        that.onStatusChanged(that.USER_STATUS_ONLINE);
-                    });
-                    // subscribe to all rooms
-                    that.join_all(function(){
-                        that.silent_mode = false;
-                    });
-
-                }else{
-                    that.authUser(function(isSuccess){
-                        if(isSuccess){
-                            that.userData = window.globalData.user;
-                            that.offline_mode = false;
-                            //set me online
-                            that.set_status(that.USER_STATUS_ONLINE,function(){
-                                that.onStatusChanged(that.USER_STATUS_ONLINE);
-                            });
-                            // subscribe to all rooms
-                            that.join_all(function(){
-                                that.silent_mode = false;
-                            });
-                        }else{
-                            that.offline_mode = true;
-                            window.globalData.user = {};
-                            that.onStatusChanged(that.USER_STATUS_OFFLINE);
-                            that.onLoginFailed(); //default on fail action
-                        }
-                    });
-                }
-                connectedCb();
-                // reconnect to event listening //
-                if(that.ioWasConneccted){
-                    that.reloadEvents();
-                }else{
-                    that.ioWasConnected = false;
-                };
-
+    this.initSocketEvents = function(cn, dc, msg){
+        that.on("connect", function(){
+            that.ioStatus = that.is_socket_online();
+            that.offline_mode = false;
+            cn();
+            // reconnect to event listening //
+            if(that.ioWasConnected){
+                that.ioWasConnected = true;
+                return  that.onSocketReconnected();
+            }
+            that.reloadEvents(function(){
+                console.log("all events realoded: Connected");
             });
-            that.on("disconnect", function(){
-                console.log("Пропало соединение");
-                that.offline_mode = true;
-                that.silent_mode = true;
-                that.onStatusChanged(that.USER_STATUS_OFFLINE)
-                that.ioStatus = that.is_socket_online();
-                disconnectedCb();
-                that.wait_for_io(function(){
-                    return that.initSocketEvents(connectedCb, disconnectedCb, globalMessageCb, $location);
-                });
-            });
+            that.onSocketConnected();
         });
-
+        that.on("disconnect", function(){
+            that.offline_mode = true;
+            console.log("Пропало соединение");
+            that.offline_mode = true;
+            that.silent_mode = true;
+            that.onStatusChanged(that.USER_STATUS_OFFLINE);
+            that.storage.user.is_online = 0;
+            that.ioStatus = that.is_socket_online();
+            dc();
+            that.onSocketDisconnected();
+            io.socket.removeAllListeners();
+            console.log("Связь прервалась, пытаемся восстановить");
+        });
+        that.on("global_message", function(message){
+            msg(message.text);
+        });
+        that.onEventsReloaded = function(){};
     };
-
+    /*** is user logged in **/
+    this.isLoggedIn = function(cb){
+        if(that.storage.user.id){
+            return cb(true);
+        }else{
+            return cb(false);
+        };
+    };
     /*** reload events on REstart ***/
     this.reloadEvents = function(cb){
         that.wait_for_io(function(){
             for(var eventName in that.events){
-                that.on(eventName, that.events[eventName]);
+
+                that.on(eventName, null);
             }
+            that.onEventsReloaded();
             cb();
         });
     };
     /*** subscribe to socket events ***/
     this.on = function(eventName, cb){
+        console.log(eventName," is registered");
+        if(typeof(that.events[eventName]) == "undefined"){
+            that.events[eventName] = {
+                callback: function(data){
+                    that.events[eventName].used++;
+                    that.onEventCalled(eventName,data,cb);
+                    cb(data);
+                },
+                originalCb: cb,
+                registered:0,
+                used:0
+            };
+            that.events[eventName].registered++;
+        }else{
+            that.events[eventName].registered++;
+        }
+
         that.wait_for_io(function(){
-            that.events["eventName"] = cb;
-            io.socket.on(eventName, cb);
+            that.onEventRegistered(eventName, that.events[eventName]);
+            io.socket.on(eventName,that.events[eventName].callback);
         });
     };
+    /// unsubscribe **/
+    this.off = function(eventName, cb){
+        console.log(eventName, "unsubscribed");
+        io.socket.off(eventName, function(d){
+            that.events[eventName] = false;
+            that.onEventUnsubscribe(eventName);
+            cb(d);
+        });
+    };
+
+    /*** call eventCallback ***/
+
 
     /*** inspect for socket is connected ***/
     this.wait_iterations = 0;
     this.wait_for_io = function(cb){
         that.ioStatus = io.socket.isConnected();
+        console.log("IOSTATUS:",that.ioStatus);
         if(!that.ioStatus){
-            var interval = window.setInterval(function(){
+            var interval = $interval(function(){
                 that.ioStatus = that.is_socket_online();
                 that.wait_iterations++;
                 if(that.ioStatus){
-                    window.clearInterval(interval);
+                    $interval.cancel(interval);
                     cb();
                 }
-            },1000);
+            },500);
         }else{
             cb();
         }
@@ -390,47 +481,97 @@ clicklife.service("userService", function(musicService,videoService, callService
     };
 
     /*** auth user ****/
-    this.authUser = function(cb){
-        that.userData = window.globalData.user;
-        var password = that.userData;
-        var username = that.userData;
-        io.socket.post("/user/login",{
-            login: username,
-            password: password
-        },function(data){
-            if(data.error){
-                return cb(false); // auth failed
-            }
-            that.userData = data;
-            cb(true); // auth ok
+    this.authUser = function(cb, options){
+        var password = options.password;
+        var username = options.username;
+        var silent = options.silent;
+        if(!silent){
+            silent = false;
+        }
+        if(!options){
+            var password = that.storage.user.password;
+            var username = that.storage.user.username;
+        }
+        that.wait_for_io(function(){
+            io.socket.post("/user/login",{
+                login: username,
+                password: password
+            },function(data){
+                if(data.error){
+                    that.onLoginFailed(data);
+                    Materialize.toast(data.error);
+                    return cb(false); // auth failed
+                }
+                that.storage.user = data;
+                that.onLoginSuccess();
+                cb(true, data); // auth ok
+            });
         });
     };
 
     /*** set User Status ***/
     this.set_status = function(status, cb){
-        io.socket.get("/user/update_status",{ user: window.globalData.user.id, status: status}, function(){
+        io.socket.get("/user/update_status",{ user: that.storage.user.id, status: status}, function(){
             cb();
         });
     };
+
+    /*** update online status by timer***/
+    this.statusAutoUpdate = function(ms){
+        if(that.updateStatusInterval == 0 && that.storage.user.id){
+            that.updateStatusInterval = $interval(function(){
+                if(!that.storage.user.id){
+                    return $interval.cancel(that.updateStatusInterval);
+                }
+                that.set_status(that.USER_STATUS_ONLINE, function(){
+                    that.onStatusChanged(status);
+                });
+            },ms);
+        }
+    };
+
     /*** Subscribes to all socket events ***/
-    this.join_all = function(cb){
-        io.socket.get("/user/join_all_rooms",{user:that.userData.id}, function(){
-            that.silent_mode = false;
-            cb();
-        });
+    this.joinAll = function(cb){
+        that.joined_times++;
+        if(!that.storage.user.id){
+
+        }else{
+            io.socket.get("/user/join_all_rooms",{user:that.storage.user.id}, function(){
+                that.silent_mode = false;
+                if(that.joinAllInterval == false){
+                    that.joinAllInterval = $interval(that.joinUpdate,10000);
+                }else{
+                    $interval.cancel(that.joinAllInterval);
+                    that.joinAllInterval = $interval(that.joinUpdate,10000);
+                }
+                that.onJoinedAll();
+
+            });
+        }
     };
+
+    /** automation joins update ***/
+
+   this.joinUpdate = function(){
+       that.joined_times++;
+       if(!that.storage.user.id){
+           $interval.cancel(that.joinAllInterval);
+       }else{
+           io.socket.get("/user/join_all_rooms",{user:that.storage.user.id}, function(){
+               that.silent_mode = false;
+               that.onJoinedAll();
+           });
+       }
+   };
 
     /*** Leave all socket rooms ***/
     this.leave_all = function(cb){
-        io.socket.get("/user/leave_all_rooms",{user:that.userData.id}, function(){
+        io.socket.get("/user/leave_all_rooms",{user:that.storage.user.id}, function(){
             that.silent_mode = true;
+            that.onLeavedAll();
             cb();
         });
     };
-
-
-
-
 
 });
 
@@ -464,7 +605,7 @@ clicklife.service("videoService", function(){
     };
 });
 /*** call service ***/
-clicklife.service("callService", function(musicService){
+clicklife.service("callService", function(musicService, $interval){
     window.phonertc = cordova.plugins.phonertc;
     phonertc.setVideoView({
         container: document.getElementById('hiddenVideo'),
@@ -489,6 +630,10 @@ clicklife.service("callService", function(musicService){
 
 
 
+    /*** get session by id ***/
+    this.getSession = function(dialogId){
+        return sessions[dialogId];
+    };
     /***
      * Listening for incoming calls
      * @param cb
@@ -517,16 +662,16 @@ clicklife.service("callService", function(musicService){
 
     this.startTimer = function(dialogId){
         sessions[dialogId].online_time = 0;
-        var timer = window.setInterval(function(){
+        sessions[dialogId].timer = $interval(function(){
             sessions[dialogId].online_time++;
             that.onTimeChange(sessions[dialogId].online_time);
         },1000);
-        sessions[dialogId].timer = timer;
+
     };
 
     this.stopTimer = function(dialogId){
         if(sessions[dialogId].timer){
-            window.clearInterval(sessions[dialogId].timer);
+            $interval.cancel(sessions[dialogId].timer);
         }
     };
 
@@ -648,6 +793,8 @@ clicklife.service("callService", function(musicService){
         }
         that.stopTimer(dialogId);
         that.onCallEnded(dialogId);
+        musicService.play("call_ended");
+
     };
 });
 /***
@@ -852,17 +999,19 @@ clicklife.service("giftsService", function(){
 /****************************************************************************
  * Logout
  */
-clicklife.controller("LogoutCtrl", function($scope){
+clicklife.controller("LogoutCtrl", function($scope, userService){
     window.globalData.user = {};
-    io.socket.get("/user/logout",{id:window.globalData.user.id}, function(){
-        location.href="#login";
+    userService.set_status(userService.USER_STATUS_OFFLINE,function(){
+            userService.leave_all(function(){
+                location.href="#login";
+            });
     });
 
 });
 /****************************************************************************
  * Login
  */
-clicklife.controller("LoginCtrl", function($scope,$location,$http){
+clicklife.controller("LoginCtrl", function($scope,$location,$http, userService){
   console.log("login ctrl");
       function login(){
           if(!$scope.username || !$scope.password){
@@ -870,24 +1019,18 @@ clicklife.controller("LoginCtrl", function($scope,$location,$http){
               return false;
           }
 
-          io.socket.post("/user/login",{
-              login: $scope.username,
-              password: $scope.password
-          },function(data){
-              if(data.error){
-                  return Materialize.toast(data.error,2000);
+          userService.authUser(function(is_success){
+              if(is_success){
+                  Materialize.toast("Поздравляем, Вы успешно авторизованы");
+                  return window.location= "#contacts";
+              }else{
+                return  Materialize.toast("Ошибка авторизации");
               }
-              window.globalData.user = data;
-
-              window.location.href = "#contacts";
-          });
+          },{username: $scope.username, password: $scope.password});
       }
     $scope.username = "";
     $scope.password = "";
     $scope.login = login;
-  if(window.globalData.user !== false && window.globalData.user.username){
-      window.location.href = "#contacts";
-  }
 });
 
 /****************************************************************************
@@ -984,10 +1127,8 @@ clicklife.controller("ConfirmCtrl", function($scope, $location){
 /****************************************************************************
  Contacts
  *********/
-clicklife.controller("ContactsCtrl", function($scope){
-    if(!window.globalData.user && !window.globalData.user.username){
-        window.location.href="#login";
-    }
+clicklife.controller("ContactsCtrl", function($scope, userService){
+
     $('ul.tabs').tabs();
     var w = $( window ).width() * 0.80;
     if(w > 500){
@@ -1241,7 +1382,7 @@ clicklife.controller("ContactsCtrl", function($scope){
 /****************************************************************************
  * Chat
  * *******/
-clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $timeout, giftsService, imageService, videoService, callService){
+clicklife.controller("ChatCtrl", function($scope,$location, $routeParams, musicService, $timeout, giftsService, imageService, videoService, callService){
 
     $('.modal-trigger').leanModal();
 
@@ -1348,9 +1489,7 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
     $scope.emojiMessage={};
 
     initDialog();
-    callService.listenForIncoming(function(user, dialog){
-        window.location.href="#incoming_call/"+user+"/"+dialog;
-    });
+
     var keyups = 0;
     $scope.imTyping = function($event){
         keyups++;
@@ -1447,15 +1586,17 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
                 return Materialize.toast("Пользователь вышел из сети");
                 $scope.showPreloader = false;
                 $scope.$apply();
+                musicService.setAudioStreamType("system");
+                musicService.play("logoff");
             }
-            window.location.href="#call/"+data.user.id + "/"+$scope.dialogId;
+            $location.href="#call/"+data.user.id + "/"+$scope.dialogId;
         });
     };
 });
 
 /*** call ***/
 
-clicklife.controller("CallCtrl", function($scope,$timeout, $routeParams, musicService, callService){
+clicklife.controller("CallCtrl", function($scope,$timeout,$interval, $routeParams, musicService, callService,$location){
     $scope.userId = $routeParams.userId;
     $scope.dialogId = $routeParams.dialogId;
     $scope.call_state = 0; // 0 = start calling
@@ -1468,7 +1609,6 @@ clicklife.controller("CallCtrl", function($scope,$timeout, $routeParams, musicSe
             function(data){
                 $scope.$apply(function(){
                     $scope.userData = data;
-                    console.log(data);
                 });
             });
         musicService.setStreamType(musicService.STREAM_RING);
@@ -1476,10 +1616,18 @@ clicklife.controller("CallCtrl", function($scope,$timeout, $routeParams, musicSe
         callService.onCallEnded = function(){
             console.log("call ended");
             musicService.stop("outcoming_call");
-            $scope.call_state = 3;
+            io.socket.get("/dialog/add_message",{
+                dialog: $scope.dialogId,
+                text:"Разговор завершен. Продолжительность: "+$scope.online_time
+            }, function(){
+
+            });
+            $scope.$apply(function(){
+                $scope.call_state = 3;
+
+            });
         };
         callService.onRemoteCallAccepted = function(){
-
             $scope.call_state = 1;
             musicService.stop("outcoming_call");
             callService.startTimer($scope.dialogId);
@@ -1493,31 +1641,30 @@ clicklife.controller("CallCtrl", function($scope,$timeout, $routeParams, musicSe
         };
         var connection_tries = 0;
         var ready_to_build = false;
-        interval = window.setInterval(function(){
-            if(ready_to_build){
-               return window.clearInterval(interval);
+        interval = $interval(function(){
+            if(ready_to_build == true){
+               return $interval.cancel(interval);
             }else{
                 callService.requestOutcomingCall($scope.dialogId, window.globalData.user.id, function(){});
             }
              connection_tries++;
-            if(connection_tries >= 60 && !ready_to_build){
-                window.clearInterval(interval);
+            if(connection_tries >= 10 && !ready_to_build){
+                $interval.cancel(interval);
                 musicService.setStreamType(musicService.STREAM_RING);
                 musicService.play("call_busy",false,0);
-                window.setTimeout(function(){
-                    window.location.href="#contacts";
+                $timeout(function(){
+                    $location.href="#contacts";
                 },500);
             }
         },1000);
 
         io.socket.on("ready_to_build_session",function(data){
             console.log("ready to build session event recieved from callee",data);
-            window.clearInterval(interval);
+            $interval.cancel(interval);
             ready_to_build = true;
             if(data.user !== window.globalData.user.id && data.dialog ==  $scope.dialogId){
                 callService.initSession($scope.dialogId);
             }
-
             if(callService.getSession($scope.dialogId)){
                 console.log($scope.dialogId);
             }
@@ -1529,8 +1676,7 @@ clicklife.controller("CallCtrl", function($scope,$timeout, $routeParams, musicSe
     $scope.stopCall = function(){
         callService.rejectIncomingCall($scope.dialogId);
         callService.stopTimer($scope.dialogId);
-        window.clearInterval(interval);
-
+        $interval.cancel(interval);
     };
 
     $scope.returnHome = function(){
@@ -1602,12 +1748,13 @@ clicklife.controller("IncomingCallCtrl", function($scope,
     userService.wait_for_io(function(){
         initController();
         userService.onPageChanged = function(currentPage){
-            if(currentPage !== "templates/call_incoming.html"){
+            if(currentPage !== "call_incoming"){
                 if($scope.call_state != 0){
                     $scope.rejectCall();
-                };
+                }
             };
-          };
+        };
+
     });
 
     $scope.acceptCall = function(){
@@ -1622,7 +1769,7 @@ clicklife.controller("IncomingCallCtrl", function($scope,
         musicService.stopAll();
         musicService.toggleMicrophone(musicService.MIC_ON);
         musicService.toggleSpeaker(false);
-        window.location.href = "#contacts";
+        $location.href = "#dialog/"+$scope.dialogId;
     };
 
     $scope.showChat = function(){
@@ -1630,7 +1777,7 @@ clicklife.controller("IncomingCallCtrl", function($scope,
         musicService.stopAll();
         musicService.toggleMicrophone(musicService.MIC_ON);
         musicService.toggleSpeaker(false);
-        window.location.href = "#dialog/"+$scope.dialogId;
+        $location.href = "#dialog/"+$scope.dialogId;
     };
 
     $scope.muteSpeakers = function(){

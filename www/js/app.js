@@ -1221,7 +1221,7 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, music, $location
 });
 
 /*** call ***/
-clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParams, music, callService, msg){
+clicklife.controller("CallCtrl", function($scope,$location,$interval,$timeout, $routeParams, music, callService, msg){
     callService.nowOnCall = true;
     var duplicateMessages = [];
 
@@ -1233,8 +1233,26 @@ clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParam
     $scope.contacts = {};
     $scope.hideFromContactList = [$scope.contactName];
     $scope.muted = false;
-
-    console.log($scope.isCalling,$scope.contactName );
+    $scope.contactData= {};
+    $scope.call_timer = 0;
+    $scope.timer = {
+        ti:"",
+        start: function(){
+            $scope.timer.ti = $interval(function(){
+               $timeout(function(){
+                   $scope.call_timer++;
+               },1);
+            },1000);
+        },
+        stop: function(){
+            $interval.cancel($scope.timer.ti);
+        }
+    };
+    io.socket.get("/user/get_data_by_uname",{uname: $scope.contactName}, function(data){
+        $scope.$apply(function(){
+            $scope.contactData = data;
+        });
+    });
 
 
     function call(isInitiator, contactName) {
@@ -1248,7 +1266,7 @@ clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParam
             },
             streams: {
                 audio: true,
-                video: false
+                video: true
             }
         };
         var session = new cordova.plugins.phonertc.Session(config);
@@ -1285,6 +1303,7 @@ clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParam
             $scope.contacts[contactNames[0]].disconnect();
         } else {
             msg.emit('sendMessage', $routeParams.contactName, { type: 'ignore' });
+
             console.log("Ignoring HERE STARTED //$state.go('app.contacts');");
         }
     };
@@ -1293,7 +1312,14 @@ clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParam
         Object.keys($scope.contacts).forEach(function (contact) {
             $scope.contacts[contact].close();
             delete $scope.contacts[contact];
+            //call_ended
+            $scope.timer.stop();
+            $scope.callInProgress = false;
         });
+    };
+
+    $scope.goToDialog = function(){
+
     };
 
     $scope.answer = function () {
@@ -1302,7 +1328,7 @@ clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParam
         $timeout($scope.updateVideoPosition, 1000);
 
         call(false, $routeParams.contactName);
-
+        $scope.timer.start();
         setTimeout(function () {
             console.log('sending answer');
             msg.emit('sendMessage', $routeParams.contactName, { type: 'answer' });
@@ -1339,7 +1365,6 @@ clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParam
 
     $scope.toggleMute = function () {
         $scope.muted = !$scope.muted;
-
         Object.keys($scope.contacts).forEach(function (contact) {
             var session = $scope.contacts[contact];
             session.streams.audio = !$scope.muted;
@@ -1348,7 +1373,7 @@ clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParam
     };
 
     function onMessageReceive (data) {
-        console.log("Recieved_locally",data);
+        //console.log("Recieved_locally",data);
         var name = data.from;
         var message = data.message;
         if(message.type == "answer" ){
@@ -1366,6 +1391,7 @@ clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParam
                 });
             }
             call(true, name);
+            $scope.timer.start();
         }
         if(message.type == "ignore"){
             var len = Object.keys($scope.contacts).length;

@@ -227,22 +227,19 @@ clicklife.run(function($rootScope, $interval,$timeout, msg, music,$location,Auth
 
 });
 
-clicklife.run(function($location,$rootScope, msg, callService,$timeout){
-    $rootScope.$on("$routeChangeSuccess",function(event, current, prev){
-       msg.on("messageReceived", function(data){
-           console.log("messageReceivedGlobal",data);
-           if(data.message.type == 'call'){
+clicklife.run(function( msg, callService,$timeout){
+    msg.on("messageReceived", function(data){
+        console.log("messageReceivedGlobal",data);
+        if(data.message.type == 'call'){
+            if(! callService.nowOnCall){
+                $timeout(function(){
+                    callService.nowOnCall = true;
+                    window.location.href = "#call/"+data.from+"/0";
+                },0);
+            }
 
-              if(! callService.nowOnCall){
-                  $timeout(function(){
-                      callService.nowOnCall = true;
-                      window.location.href = "#call/"+data.from+"/0";
-                  },0);
-              }
+        }
 
-           }
-
-       });
     });
 });
 
@@ -1291,29 +1288,18 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
             $scope.contactData = data;
         });
     });
-
-
     //when call ended
     $scope.afterCallEnded = function(){
-        music.setStreamType("ring");
-        music.play("call_ended",false,0);
         music.stopAll();
+        music.setStreamType("ring");
+        music.play("call_busy",false,0);
         $scope.timer.stop();
-        $scope.callInProgress = false;
         console.log("on call ended!");
         Materialize.toast("Звонок завершен",2000);
-        io.socket.get("/dialog/join",{ user: $scope.contactData.id}, function(data){
-            io.socket.get("/dialog/add_message",{
-                dialog: data.dialog,
-                text:"Звонок завершен. Продолжительность: "+$scope.call_timer+"сек."
-            }, function(){
-                $timeout(function(){
-                    location.href="#dialog/"+data.dialog;
-                },0);
-            });
-        });
+        window.location.href="#contacts";
     };
     $scope.beforeCallStarted = function(){
+        music.stopAll();
         music.setStreamType("ring");
         if($scope.isCalling){
             music.play("outcoming_call",true,500);
@@ -1324,18 +1310,11 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
             $scope.answered = false;
             msg.emit('sendMessage', $routeParams.contactName, { type: 'call' });
             console.log("send invite");
-            $timeout(function(){
-                if(!$scope.answered){
-                    Materialize.toast("Нет ответа 30 секунд",2000);
-                    $scope.afterCallWasAborted();
-                }
-            },30000);
         }else{
 
         }
         console.log("beforeCallCreated!");
     };
-
     $scope.afterCallAnswered = function(){
         $scope.answered = true;
         // $scope.callInProgress = true;
@@ -1343,18 +1322,10 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         $scope.timer.start();
         console.log("callAnswered");
     };
-
     $scope.afterCallWasAborted = function(){
-        music.setStreamType("ring");
-        music.play("call_busy",false,0);
-        music.stopAll();
-        $scope.timer.stop();
-        console.log("call Was aborted");
+
        // $scope.afterCallEnded();
     };
-
-
-
 
     function call(isInitiator, contactName) {
         console.log(new Date().toString() + ': calling to ' + contactName + ', isInitiator: ' + isInitiator);
@@ -1386,13 +1357,12 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
             }
             if (Object.keys($scope.contacts).length === 0) {
                 msg.emit('sendMessage', contactName, { type: 'ignore' });
-               $scope.afterCallEnded();
+                $scope.afterCallEnded();
             }
         });
         session.call();
         $scope.contacts[contactName] = session;
     }
-
     //init call
     $scope.beforeCallStarted();
 
@@ -1402,39 +1372,31 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
             $scope.contacts[contactNames[0]].disconnect();
         } else {
             msg.emit('sendMessage', $routeParams.contactName, { type: 'ignore' });
-            $scope.afterCallWasAborted();
+           // $scope.afterCallEnded();
+            $scope.afterCallEnded();
         }
     };
 
     $scope.end = function () {
+
         Object.keys($scope.contacts).forEach(function (contact) {
             $scope.contacts[contact].close();
             delete $scope.contacts[contact];
         });
-        msg.emit('sendMessage', $routeParams.contactName, { type: 'ignore' });
+
         $scope.afterCallEnded();
     };
 
     $scope.goToDialog = function(){
-        try{
+        music.stopAll();
+        Object.keys($scope.contacts).forEach(function (contact) {
             $scope.contacts[contact].close();
             delete $scope.contacts[contact];
-            var contactNames = Object.keys($scope.contacts);
-            if (contactNames.length > 0) {
-                $scope.contacts[contactNames[0]].disconnect();
-            } else {
-                msg.emit('sendMessage', $routeParams.contactName, { type: 'ignore' });
-            }
-        }catch(e){
-
-        }
+        });
         music.setStreamType("ring");
         music.play("call_ended",false,0);
         music.stopAll();
         $scope.timer.stop();
-        $scope.callInProgress = false;
-        console.log("on call ended!");
-        Materialize.toast("Подождите...",560);
         io.socket.get("/dialog/join",{ user: $scope.contactData.id}, function(data){
             io.socket.get("/dialog/add_message",{
                 dialog: data.dialog,
@@ -1448,6 +1410,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
     };
 
     $scope.answer = function () {
+        music.stopAll();
         if ($scope.callInProgress) { return; }
         $scope.callInProgress = true;
         cordova.plugins.phonertc.hideVideoView();
@@ -1461,7 +1424,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
     };
 
     $scope.updateVideoPosition = function () {
-        $rootScope.$broadcast('videoView.updatePosition');
+       // $rootScope.$broadcast('videoView.updatePosition');
     };
 
     $scope.openSelectContactModal = function () {
@@ -1504,6 +1467,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
                 $scope.callInProgress = true;
                // $timeout($scope.updateVideoPosition, 1000);
                 cordova.plugins.phonertc.hideVideoView();
+                $scope.afterCallAnswered();
             });
 
             var existingContacts = Object.keys($scope.contacts);
@@ -1515,7 +1479,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
                 });
             }
             call(true, name);
-            $scope.afterCallAnswered();
+
         }
         if(message.type == "ignore"){
             var len = Object.keys($scope.contacts).length;
@@ -1568,22 +1532,15 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
     $scope.$on('$destroy', function() {
         io.socket.off('messageReceived', onMessageReceive);
     });
-
 });
-
-clicklife.controller("DialogsCtrl", function($scope, $location){
-
-});
+clicklife.controller("DialogsCtrl", function($scope, $location){});
 clicklife.controller("PageCtrl", function($scope, $location){
 
 });
 clicklife.controller("CashCtrl", function($scope, $location){
 
-});
-clicklife.controller("ProfileCtrl", function($scope, $location){
-
-});
-
+});y
+clicklife.controller("ProfileCtrl", function($scope, $location){});
 clicklife.directive('videoView', function ($rootScope, $timeout) {
     return {
         restrict: 'E',

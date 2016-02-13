@@ -1,15 +1,6 @@
 
 
-var globalData = {
-    set user(value){
-        var j =  JSON.stringify( value );
-        window.localStorage.setItem("user",j);
-    },
-    get user(){
-        var r = JSON.parse(window.localStorage.getItem("user"));
-        return r?r:false;
-    }
-};
+
 var jqComponents = {
     toggler: function(){
         var visible = false;
@@ -173,13 +164,8 @@ clicklife.config(function($routeProvider){
 /***
  * initialization
  */
-clicklife.run(function($rootScope,$location, callService) {
-    try{
-        StatusBar.hide();
-    }catch(e){};
-    //window.initData();
+clicklife.run(function($rootScope,$location, call) {
     $rootScope.$on("$routeChangeSuccess",function(event, current, prev){
-
         if (
             current.templateUrl == "templates/login.html" ||
             current.templateUrl == "templates/confirm_success.html"
@@ -190,57 +176,19 @@ clicklife.run(function($rootScope,$location, callService) {
 
         }
     });
-    io.socket.on('disconnect', function(){
-        var i = setInterval(function(){
-            Materialize.toast("Связь прервана, попытка повторного соединения...",1600);
-            if(io.socket.isConnected()){
-                clearInterval(i);
-            }
-        },1500);
-        setTimeout(function(){
-            clearInterval(i);
-            if(!io.socket.isConnected()){
-                try{
-                    navigator.notification.alert(
-                        'Соединение с сервером потеряно. Проверьте подключение к интернету',  // message
-                        function(){
-                            window.globalData.user = {};
-                            location.href="#login";
-                        },         // callback
-                        'Связь потеряна',            // title
-                        'Ok'                  // buttonName
-                    );
-                }catch(e){
-                    alert("Связь потеряна");
-                    window.globalData.user = {};
-                    location.href="#login";
-                }
-            }
-        },25000);
+});
 
-    });
-    io.socket.on('connect', function(){
-        if(window.globalData.user && window.globalData.user.username){
-            io.socket.post("/user/login",{
-                login: window.globalData.user.username,
-                password: window.globalData.user.password
-            },function(data){
-                if(data.error){
-                    window.globalData.user = {};
-                    location.href="#login";
-                }
-                console.log("Свзяь с сервером восстановлена");
-                Materialize.toast("Свзяь с сервером восстановлена",2000);
-            });
-        }else{
+clicklife.run(function($rootScope, $location, Auth){
+    $rootScope.$on('$routeChangeStart', function (event) {
+        if (!Auth.isLoggedIn()) {
+            console.log('DENY');
+            event.preventDefault();
+            $location.path('/login');
+        }
+        else {
+            console.log('ALLOW');
 
         }
-
-    });
-
-
-    callService.listenForIncoming(function(user, dialog){
-        window.location.href="#incoming_call/"+user+"/"+dialog;
     });
 
 });
@@ -248,10 +196,35 @@ clicklife.run(function($rootScope,$location, callService) {
 /***********************************************************************************************************************
  * SERVICES
  **********************************************************************************************************************/
+clicklife.factory("Auth", function(){
+    var storage = {
+        set user(value){
+            var j =  JSON.stringify( value );
+            window.localStorage.setItem("user",j);
+        },
+        get user(){
+            var r = JSON.parse(window.localStorage.getItem("user"));
+            return r?r:false;
+        }
+    };
+
+    return{
+        getUser: function(){
+            return storage.user;
+        },
+        setUser : function(aUser){
+            storage.user = aUser;
+        },
+        isLoggedIn : function(){
+            return(storage.user.username)? storage.user : false;
+        }
+    }
+});
+
 /***
  * Video Service
  */
-clicklife.service("videoService", function(){
+clicklife.service("Video", function(){
     /*** capture video ***/
     this.capture = function(cb){
         navigator.device.capture.captureVideo(cb, function(e){
@@ -278,196 +251,13 @@ clicklife.service("videoService", function(){
     };
 });
 /*** call service ***/
-clicklife.service("callService", function(musicService){
-    window.phonertc = cordova.plugins.phonertc;
-    phonertc.setVideoView({
-        container: document.getElementById('hiddenVideo'),
-        containerParams: {
-            size: [0,0],
-            position:[0,0]
-        },
-        local: {
-            position: [0, 0],
-            size: [0, 0]
-        }
-    });
-    var that = this;
-    var sessions = {};// all sessions
-    /*** callbacks ***/
-    this.onIncomingCallStarted = function(){};
-    this.onRemoteCallAccepted = function(){};
-    this.onIncomingCallAccepted = function(){};
-    this.onCallEnded = function(data){};
-    this.onTimeChange = function(time){};
+clicklife.service("call", function(music){
 
-
-
-
-    /***
-     * Listening for incoming calls
-     * @param cb
-     */
-    this.listenForIncoming = function(cb){
-        io.socket.on("incoming_call_request", function(data){
-            console.log(data,"incoming_call_request");
-            if(data.initiator !== window.globalData.user.id){
-                return  cb(data.initiator, data.dialog);
-            }
-        });
-    };
-
-    /*** call request ***/
-    this.requestOutcomingCall = function(dialogId, initiator, cb){
-        io.socket.get("/dialog/call_request",{
-            dialog: dialogId,
-            initiator:initiator
-        }, function(data){
-            if(data.error || data.user.is_online == '0'){
-                Materialize.toast("Пользователь вышел из сети");
-                cb(data);
-            }
-        });
-    };
-
-    this.startTimer = function(dialogId){
-        sessions[dialogId].online_time = 0;
-        var timer = window.setInterval(function(){
-            sessions[dialogId].online_time++;
-            that.onTimeChange(sessions[dialogId].online_time);
-        },1000);
-        sessions[dialogId].timer = timer;
-    };
-
-    this.stopTimer = function(dialogId){
-        if(sessions[dialogId].timer){
-            window.clearInterval(sessions[dialogId].timer);
-        }
-    };
-
-    /*** init  outcoming session ***/
-    this.initSession = function(dialogId){
-        console.log("creating new outcoming call session");
-        var config = {
-            isInitiator: true,
-            turn: {
-                host: 'turn:clicklife.link:3478',
-                username: 'admin',
-                password: '123'
-            },
-            streams: {
-                audio: true,
-                video: false
-            }
-        };
-        var session = new phonertc.Session(config);
-        session.streams.video = false;
-        phonertc.hideVideoView();
-        session.on('sendMessage', function (data) {
-            io.socket.get("/dialog/session_message",{dialogId: dialogId, from:window.globalData.user.id,  data:JSON.stringify(data)});
-        });
-        session.on("answer", function(){
-            console.log("session initialized");
-        });
-        session.on("disconnect", function(){
-            musicService.setStreamType("system");
-            musicService.play("call_busy",false,0);
-            that.onCallEnded();
-        });
-        // init call
-        io.socket.get("/dialog/init_remote_call",{
-            dialogId: dialogId,
-            from: window.globalData.user.id
-        }, function(){});
-        io.socket.on("session_message", function(data){
-            if(data.from != window.globalData.user.id && data.dialogId == dialogId){
-                session.receiveMessage(JSON.parse(data.data));
-            }
-        });
-        io.socket.on('call_accepted', function(data){
-            console.log("OnCallAccepted OUTCom: ", data);
-            if(data.from != window.globalData.user.id && data.dialogId == dialogId){
-                session.call();
-                that.onRemoteCallAccepted();
-                that.startTimer(dialogId);
-            }
-        });
-        sessions[dialogId] = session;
-    };
-
-    //init an incoming call
-    this.initialize = function(dialogId){
-
-        phonertc.hideVideoView();
-        // all ready for instantiate session
-        io.socket.get("/dialog/ready_to_build_session", {
-            dialog:dialogId,
-            user:window.globalData.user.id
-        },function(){
-            console.log("Ready To build Session send to caller");
-        });
-        io.socket.on("init_remote_call", function(data){
-            if(data.from != window.globalData.user.id && dialogId == data.dialogId){
-                var config = {
-                    isInitiator: false,
-                    turn: {
-                        host: 'turn:clicklife.link:3478',
-                        username: 'admin',
-                        password: '123'
-                    },
-                    streams: {
-                        audio: true,
-                        video: false
-                    }
-                };
-                var session = new phonertc.Session(config);
-                session.streams.video = false;
-                console.log(session," incoming session");
-                session.on('sendMessage', function (data) {
-                    io.socket.get("/dialog/session_message",{dialogId: dialogId, from:window.globalData.user.id,  data:JSON.stringify(data)});
-                });
-                io.socket.on("session_message", function(data){
-                    if(data.from != window.globalData.user.id && data.dialogId == dialogId){
-                        session.receiveMessage(JSON.parse(data.data));
-                    }
-                });
-                session.on("answer", function(){
-                    console.log("session initialized");
-                });
-                session.on("disconnect", function(){
-                    musicService.setStreamType("system");
-                    musicService.play("call_busy",false,0);
-                    that.onCallEnded();
-                });
-                sessions[dialogId] = session;
-                that.onIncomingCallStarted(data);
-            }
-        });
-    };
-
-    this.acceptIncomingCall = function(dialogId){
-        sessions[dialogId].call();
-        that.startTimer(dialogId);
-        io.socket.get("/dialog/accept_call",{
-            dialogId: dialogId,
-            from: window.globalData.user.id
-        });
-        phonertc.hideVideoView();
-        that.onIncomingCallAccepted();
-    };
-    this.rejectIncomingCall = function(dialogId){
-        try{
-            sessions[dialogId].close();
-        }catch(e){
-            sessions[dialogId] = {};
-        }
-        that.stopTimer(dialogId);
-        that.onCallEnded(dialogId);
-    };
 });
 /***
  * image service
  */
-clicklife.service("imageService", function(){
+clicklife.service("image", function(){
     /** get picture from camera or gallery **/
     this.getPicture = function(cb){
         return  navigator.camera.getPicture(cb, function(message) {
@@ -503,7 +293,7 @@ clicklife.service("imageService", function(){
 /***
  * Music service
  */
-clicklife.service("musicService", function(){
+clicklife.service("music", function(){
     var that = this;
     this.STREAM_MUSIC = "music";
     this.STREAM_RING = "system";
@@ -666,24 +456,23 @@ clicklife.service("giftsService", function(){
 /****************************************************************************
  * Logout
  */
-clicklife.controller("LogoutCtrl", function($scope){
-    window.globalData.user = {};
-    io.socket.get("/user/logout",{id:window.globalData.user.id}, function(){
-        location.href="#login";
+clicklife.controller("LogoutCtrl", function($scope, Auth,$location){
+    io.socket.get("/user/logout",{id:Auth.getUser().id}, function(){
+        Auth.setUser({});
+        $location.path("/login");
     });
 
 });
 /****************************************************************************
  * Login
  */
-clicklife.controller("LoginCtrl", function($scope,$location,$http){
-    console.log("login ctrl");
+clicklife.controller("LoginCtrl", function($scope,$location,Auth){
+
     function login(){
         if(!$scope.username || !$scope.password){
             Materialize.toast('Все поля необходимо заполнить!', 2000) // 4000 is the duration of the toast
             return false;
         }
-
         io.socket.post("/user/login",{
             login: $scope.username,
             password: $scope.password
@@ -691,23 +480,20 @@ clicklife.controller("LoginCtrl", function($scope,$location,$http){
             if(data.error){
                 return Materialize.toast(data.error,2000);
             }
-            window.globalData.user = data;
-
-            window.location.href = "#contacts";
+            Auth.setUser(data);
+            $location.path="/contacts";
         });
     }
     $scope.username = "";
     $scope.password = "";
     $scope.login = login;
-    if(window.globalData.user !== false && window.globalData.user.username){
-        window.location.href = "#contacts";
-    }
+
 });
 
 /****************************************************************************
  * Register
  */
-clicklife.controller("RegisterCtrl", function($scope, $location){
+clicklife.controller("RegisterCtrl", function($scope, $location, Auth){
     $scope.username = "";
     $scope.fio = "";
     $scope.email = "";
@@ -747,10 +533,9 @@ clicklife.controller("RegisterCtrl", function($scope, $location){
             if(data.error){
                 return Materialize.toast(data.error,2000);
             }
-
-            window.globalData.user = data;
+            Auth.setUser(data);
             console.log(data.id);
-            window.location.href="#confirmation";
+            $location.path("/confirmation");
         });
 
     };
@@ -760,22 +545,22 @@ clicklife.controller("RegisterCtrl", function($scope, $location){
 /****************************************************************************
  Confirm
  *********/
-clicklife.controller("ConfirmCtrl", function($scope, $location){
-    if(!window.globalData.user){
-        $location.path("register");
+clicklife.controller("ConfirmCtrl", function($scope, $location, Auth){
+    if(!Auth.isLoggedIn()){
+        $location.path("/register");
     }
-    $scope.username = window.globalData.user.username;
+    $scope.username = Auth.getUser().username;
     /** confirmation **/
     $scope.confirm_tries = 0;
     $scope.confirm_code = "";
-    var code_sent =window.globalData.user.id;
+    var code_sent = Auth.getUser().id;
 
     $scope.confirmuser = function(){
         $scope.confirm_tries++;
         var tries = 10 - $scope.confirm_tries;
         if(tries == 0){
             Materialize.toast("Вы исчерпали число попыток, для ввода кода",2000);
-            window.location.href="#register";
+            $location.path("/register");
         }
         var add_txt = "Осталось попыток: "+tries;
         if(!$scope.confirm_code){
@@ -790,7 +575,7 @@ clicklife.controller("ConfirmCtrl", function($scope, $location){
         io.socket.post("/user/activate",{
             user:code_sent
         },function(data){
-            window.location.href="#confirmation_success";
+            $location.path("/confirmation_success");
         });
     };
 });
@@ -798,10 +583,21 @@ clicklife.controller("ConfirmCtrl", function($scope, $location){
 /****************************************************************************
  Contacts
  *********/
-clicklife.controller("ContactsCtrl", function($scope,musicService, callService){
-    if(!window.globalData.user && !window.globalData.user.username){
-        window.location.href="#login";
-    }
+clicklife.controller("ContactsCtrl", function($scope,music, Auth, $location){
+    $scope.$watch(Auth.isLoggedIn, function (value, oldValue) {
+        if(!value && oldValue) {
+            console.log("User Disconnect");
+            io.socket.get("/user/logout",{id:Auth.getUser().id}, function(){
+                Auth.setUser({});
+                $location.path("/login");
+            });
+        }
+        if(value) {
+            console.log("Connected success");
+            //Do something when the user is connected
+        }
+
+    }, true);
     $('ul.tabs').tabs();
     var w = $( window ).width() * 0.80;
     if(w > 500){
@@ -834,9 +630,6 @@ clicklife.controller("ContactsCtrl", function($scope,musicService, callService){
     };
     // инициализация контактов
     $scope.initContacts = function(){
-        callService.listenForIncoming(function(user, dialog){
-            window.location.href="#incoming_call/"+user+"/"+dialog;
-        });
         io.socket.get("/contacts/get_by_user",{user: window.globalData.user.id}, function(data){
             io.socket.get("/contacts/get_groups_by_user",{user: window.globalData.user.id}, function(gData){
                 $scope.$apply(function(){
@@ -853,12 +646,12 @@ clicklife.controller("ContactsCtrl", function($scope,musicService, callService){
                 if(row.contact.id == msg.data.id){
                     $scope.contacts[k].contact = msg.data;
                     if(msg.data.is_online == '1'){
-                        musicService.setStreamType("ring");
-                        musicService.play("contact_added");
+                        music.setStreamType("ring");
+                        music.play("contact_added");
                         // window.plugin.notification.local.add({ text: 'Пользователь появился в сети', title:msg.data.fio + "))"  });
                     }else{
-                        musicService.setStreamType("ring");
-                        musicService.play("logoff");
+                        music.setStreamType("ring");
+                        music.play("logoff");
                         // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:msg.data.fio+ "(("  });
                     }
                     $scope.$apply();
@@ -889,12 +682,12 @@ clicklife.controller("ContactsCtrl", function($scope,musicService, callService){
                     Materialize.toast("Контакт добавлен",1000);
                     $scope.$apply(function(){
                         if(data.created.contact.is_online == '1'){
-                            musicService.setStreamType("ring");
-                            musicService.play("contact_added");
+                            music.setStreamType("ring");
+                            music.play("contact_added");
                             // window.plugin.notification.local.add({ text: 'Пользователь появился в сети', title:data.created.contact.fio + "))"  });
                         }else{
-                            musicService.setStreamType("ring");
-                            musicService.play("logoff");
+                            music.setStreamType("ring");
+                            music.play("logoff");
                             // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:data.created.contact.fio+ "(("  });
                         }
                         $scope.contacts.push(data.created);
@@ -960,13 +753,13 @@ clicklife.controller("ContactsCtrl", function($scope,musicService, callService){
             Materialize.toast("Контакт добавлен",1000);
             $scope.$apply(function(){
                 if(data.created.contact.is_online == '1'){
-                    musicService.setStreamType("ring");
-                    musicService.play("contact_added");
+                    music.setStreamType("ring");
+                    music.play("contact_added");
                     // window.plugin.notification.local.add({ text: 'Пользователь появился в сети', title:data.created.contact.fio + "))"  });
                 }else{
                     // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:data.created.contact.fio+ "(("  });
-                    musicService.setStreamType("ring");
-                    musicService.play("logoff");
+                    music.setStreamType("ring");
+                    music.play("logoff");
                 }
                 $scope.contacts.push(data.created);
             });
@@ -1071,8 +864,21 @@ clicklife.controller("ContactsCtrl", function($scope,musicService, callService){
 /****************************************************************************
  * Chat
  * *******/
-clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $timeout, giftsService, imageService, videoService, callService){
+clicklife.controller("ChatCtrl", function($scope, $routeParams, music, $location,$timeout, giftsService, image, Video,Auth){
+    $scope.$watch(Auth.isLoggedIn, function (value, oldValue) {
+        if(!value && oldValue) {
+            console.log("User Disconnect");
+            io.socket.get("/user/logout",{id:Auth.getUser().id}, function(){
+                Auth.setUser({});
+                $location.path("/login");
+            });
+        }
+        if(value) {
+            console.log("Connected success");
+            //Do something when the user is connected
+        }
 
+    }, true);
     $('.modal-trigger').leanModal();
     jqComponents.initTogler();
     $(".fancybox_iframe").fancybox();
@@ -1084,7 +890,7 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
         io.socket.get("/dialog/get_messages",{dialog: $scope.dialogId}, function(data){
             giftsService.getAll(function(gifts){
                 angular.forEach($scope.messages, function(m,k){
-                    if(m.from.id != window.globalData.user.id && m.readed == 0){
+                    if(m.from.id != Auth.getUser().id && m.readed == 0){
                         io.socket.get("/dialog/update_message_status",{
                             message: m.id,
                             dialog: $scope.dialogId
@@ -1113,7 +919,7 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
         });
         // on Type
         io.socket.on("typing", function(data){
-            if(data.dialog == $scope.dialogId && data.name != window.globalData.user.fio){
+            if(data.dialog == $scope.dialogId && data.name != Auth.getUser().fio){
                 $scope.typestatus = 1;
                 $scope.typeName = data.name;
                 $scope.$apply();
@@ -1126,15 +932,15 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
         // on new message
         io.socket.on("new_message", function(data){
             if(data.dialog == $scope.dialogId){
-                if(data.from.id !=  window.globalData.user.id){
+                if(data.from.id !=  Auth.getUser().id){
                     //update readed status, msg = incoming
                     io.socket.get("/dialog/update_message_status",{
                         message: data.id,
                         dialog: $scope.dialogId
                     }, function(){});
                     data.readed = 1;
-                    musicService.setStreamType(musicService.STREAM_SYSTEM);
-                    musicService.play("new_message");
+                    music.setStreamType(music.STREAM_SYSTEM);
+                    music.play("new_message");
                 }
                 $scope.messages.push(data);
                 if($scope.messages.length > 50){
@@ -1156,7 +962,7 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
         // on update_message_status
         io.socket.on("update_message_status", function(data){
             angular.forEach($scope.messages, function(msg,key){
-                if(msg.id == data.message && msg.from.id == window.globalData.user.id){
+                if(msg.id == data.message && msg.from.id == Auth.getUser().id){
                     $scope.messages[key].readed = 1;
                     $scope.$apply();
                 }
@@ -1165,7 +971,7 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
     };
     $scope.showPreloader = true;
     $scope.dialogId = $routeParams.dialogId;
-    $scope.uId = window.globalData.user.id;
+    $scope.uId = Auth.getUser().id;
     $scope.messages = [];
     $scope.dialogName = "";
     $scope.dialogIcon = "";
@@ -1175,9 +981,6 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
     $scope.gifts = [];
     $scope.emojiMessage={};
     initDialog();
-    callService.listenForIncoming(function(user, dialog){
-        window.location.href="#incoming_call/"+user+"/"+dialog;
-    });
     var keyups = 0;
     $scope.imTyping = function($event){
         keyups++;
@@ -1217,12 +1020,12 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
         jqComponents.toggler().hide();
         $scope.showPreloader = true;
         $scope.$apply();
-        imageService.getPicture(function(imgUrl){
+        image.getPicture(function(imgUrl){
             if(!imgUrl){
                 return false;
             }
-            imageService.uploadPhoto(imgUrl,"http://clicklife.link:1337/dialog/upload_photo",{
-                from: window.globalData.user.id,
+            image.uploadPhoto(imgUrl,"http://clicklife.link:1337/dialog/upload_photo",{
+                from: Auth.getUser().id,
                 dialog: $scope.dialogId,
             },function(){
                 //success
@@ -1236,10 +1039,10 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
         jqComponents.toggler().hide();
         $scope.showPreloader = true;
         $scope.$apply();
-        videoService.capture(function(mediafiles){
+        Video.capture(function(mediafiles){
             $scope.showPreloader = true;
-            videoService.uploadVideo(mediafiles[0],"http://clicklife.link:1337/dialog/upload_video",{
-                from: window.globalData.user.id,
+            Video.uploadVideo(mediafiles[0],"http://clicklife.link:1337/dialog/upload_video",{
+                from: Auth.getUser().id,
                 dialog: $scope.dialogId,
             }, function(){
                 $scope.showPreloader = false;
@@ -1252,10 +1055,10 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
         jqComponents.toggler().hide();
         $scope.showPreloader = true;
         $scope.$apply();
-        musicService.capture(function(mediafiles){
+        music.capture(function(mediafiles){
             $scope.showPreloader = true;
-            musicService.uploadAudio(mediafiles[0],"http://clicklife.link:1337/dialog/upload_audio",{
-                from: window.globalData.user.id,
+            music.uploadAudio(mediafiles[0],"http://clicklife.link:1337/dialog/upload_audio",{
+                from: Auth.getUser().id,
                 dialog: $scope.dialogId,
             }, function(){
                 $scope.showPreloader = false;
@@ -1268,11 +1071,11 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
         $scope.showPreloader = true;
         io.socket.get("/dialog/call_request",{
             dialog: $scope.dialogId,
-            initiator: window.globalData.user.id
+            initiator: Auth.getUser().id
         }, function(data){
             if(data.error || data.user.is_online == '0'){
-                musicService.setStreamType(musicService.STREAM_RING);
-                musicService.play("new_message");
+                music.setStreamType(music.STREAM_RING);
+                music.play("new_message");
                 return Materialize.toast("Пользователь вышел из сети");
                 $scope.showPreloader = false;
                 $scope.$apply();
@@ -1283,205 +1086,10 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams, musicService, $t
 });
 
 /*** call ***/
-clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParams, musicService, callService){
-    $scope.userId = $routeParams.userId;
-    $scope.dialogId = $routeParams.dialogId;
-    $scope.call_state = 0; // 0 = start calling
-    $scope.userData  = {};
-    $scope.online_time = 0;
-    var interval;
-    var initController = function(){
-        io.socket.get("/dialog/get_call_data",
-            {user: $scope.userId, initiator: window.globalData.user.id},
-            function(data){
-                $scope.$apply(function(){
-                    $scope.userData = data;
-                    console.log(data);
-                });
-            });
-        musicService.setStreamType(musicService.STREAM_RING);
-        musicService.play("outcoming_call",true, 450);
-        callService.onCallEnded = function(){
-            console.log("call ended");
-            musicService.stop("outcoming_call");
-            $scope.call_state = 3;
-            $scope.stopCall();
-        };
-        callService.onRemoteCallAccepted = function(){
-            $scope.call_state = 1;
-            musicService.stop("outcoming_call");
-            callService.startTimer($scope.dialogId);
-        };
-        callService.onTimeChange = function(seconds){
-            //console.log("time changed + "+seconds);
-            $scope.online_time = seconds;
-        };
-        var connection_tries = 0;
-        var ready_to_build = false;
-        interval = window.setInterval(function(){
-            if(ready_to_build){
-                return window.clearInterval(interval);
-            }else{
-                callService.requestOutcomingCall($scope.dialogId, window.globalData.user.id, function(){});
-            }
-            connection_tries++;
-            if(connection_tries >= 60 && !ready_to_build){
-                window.clearInterval(interval);
-                musicService.setStreamType(musicService.STREAM_RING);
-                musicService.play("call_busy",false,0);
-                window.setTimeout(function(){
-                    window.location.href="#contacts";
-                },500);
-            }
-        },1000);
+clicklife.controller("CallCtrl", function($scope,$location,$timeout, $routeParams, music, call){
 
-        io.socket.on("ready_to_build_session",function(data){
-            console.log("ready to build session event recieved from callee",data);
-            window.clearInterval(interval);
-            ready_to_build = true;
-            if(data.user !== window.globalData.user.id && data.dialog ==  $scope.dialogId){
-                callService.initSession($scope.dialogId);
-            }
-        });
-
-    };
-    $("body").addClass("bg_1");
-    initController();
-    $scope.stopCall = function(){
-        callService.rejectIncomingCall($scope.dialogId);
-        musicService.stopAll();
-        callService.stopTimer($scope.dialogId);
-        musicService.toggleMicrophone(musicService.MIC_ON);
-        musicService.toggleSpeaker(false);
-        io.socket.get("/dialog/add_message",{
-            dialog: $scope.dialogId,
-            text:"Разговор завершен. Продолжительность: "+$scope.online_time
-        }, function(){
-            $location.href = "#dialog/"+$scope.dialogId;
-        });
-
-    };
-    $scope.returnHome = function(){
-        callService.rejectIncomingCall($scope.dialogId);
-        musicService.stopAll();
-        callService.stopTimer($scope.dialogId);
-        musicService.toggleMicrophone(musicService.MIC_ON);
-        musicService.toggleSpeaker(false);
-        io.socket.get("/dialog/add_message",{
-            dialog: $scope.dialogId,
-            text:"Разговор завершен. Продолжительность: "+$scope.online_time
-        }, function(){
-            $location.href = "#dialog/"+$scope.dialogId;
-        });
-    };
 });
-clicklife.controller("IncomingCallCtrl", function($scope, $timeout, $routeParams, musicService, callService, $location){
-    $scope.userId = $routeParams.userId;
-    $scope.dialogId = $routeParams.dialogId;
-    $scope.call_state = 0; // 0 = start calling
-    $scope.userData  = {};
-    $scope.online_time = 0; // connection, 1 - connected, 2 speaking, 3 ended
-    $scope.volume_off = false;
-    $scope.mic_off = false;
-    $("body").addClass("bg_1");
-    var initController = function(){
-        io.socket.get("/dialog/get_call_data",
-            {user: $scope.userId},
-            function(data){
-                $scope.userData = data;
-                console.log(data);
-                $scope.$apply();
-            });
 
-        callService.onIncomingCallAccepted = function(){
-            $scope.call_state = 2; // speaking
-            musicService.stop("incoming_call");
-        };
-        callService.onCallEnded = function(){
-            musicService.stop("incoming_call");
-            musicService.play("call_ended",false,0);
-            $scope.call_state = 3;
-            $scope.rejectCall();
-        };
-        callService.onIncomingCallStarted = function(){
-            musicService.setStreamType(musicService.STREAM_RING);
-            musicService.play("incoming_call",1,400);
-            try{
-                $scope.$apply(function(){
-                    console.log("Incoming call started");
-                    $scope.call_state =1; // show buttons;
-                });
-            }catch (e){
-                console.log("Incoming call started");
-                $scope.call_state =1; // show buttons;
-            }
-
-        };
-        callService.onTimeChange = function(seconds){
-            $scope.$apply(function(){
-                $scope.online_time = seconds;
-            });
-        };
-        callService.initialize($scope.dialogId);
-
-
-    };
-    initController();
-    $scope.acceptCall = function(){
-        $scope.call_state = 2;
-        callService.acceptIncomingCall($scope.dialogId);
-        musicService.stop("incoming_call");
-
-    };
-    $scope.rejectCall = function(){
-        callService.rejectIncomingCall($scope.dialogId);
-        musicService.stopAll();
-        callService.stopTimer($scope.dialogId);
-        musicService.toggleMicrophone(musicService.MIC_ON);
-        musicService.toggleSpeaker(false);
-        io.socket.get("/dialog/add_message",{
-            dialog: $scope.dialogId,
-            text:"Разговор завершен. Продолжительность: "+$scope.online_time
-        }, function(){
-            $location.href = "#dialog/"+$scope.dialogId;
-        });
-    };
-    $scope.showChat = function(){
-        callService.rejectIncomingCall($scope.dialogId);
-        musicService.stopAll();
-        callService.stopTimer($scope.dialogId);
-        musicService.toggleMicrophone(musicService.MIC_ON);
-        musicService.toggleSpeaker(false);
-        io.socket.get("/dialog/add_message",{
-            dialog: $scope.dialogId,
-            text:"Разговор завершен. Продолжительность: "+$scope.online_time
-        }, function(){
-            $location.href = "#dialog/"+$scope.dialogId;
-        });
-    };
-    $scope.muteSpeakers = function(){
-        if($scope.volume_off == true){
-            // volume on
-            musicService.toggleSpeaker(true);
-            $scope.volume_off = false;
-        }else {
-            //mute
-            musicService.toggleSpeaker(false);
-            $scope.volume_off = true;
-        }
-    };
-    $scope.muteMicrophone = function(){
-        if($scope.mic_off == true){
-            $scope.mic_off = false;
-            // on microphone
-            musicService.toggleMicrophone(musicService.MIC_ON);
-        }else{
-            $scope.mic_off = true;
-            //off microphone
-            musicService.toggleMicrophone(musicService.MIC_OFF);
-        }
-    };
-});
 clicklife.controller("DialogsCtrl", function($scope, $location){
 
 });

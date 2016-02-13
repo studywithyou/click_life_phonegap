@@ -121,9 +121,9 @@
                     </ul>
                     <a href="#toggle" class="toggler"></a>
                 </div>
-                <div class="text_form"  emoji-form emoji-message="emojiMessage">
+                <div class="text_form"  emoji-form emoji-message="emojiMessage" ng-keyup="imTyping($event)">
                     <textarea name="ddd"
-                              ng-keyup="imTyping($event)"
+
                               id="textform"
                               placeholder="Введите сообщение"
                               ng-model="emojiMessage.messagetext"

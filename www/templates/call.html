@@ -47,16 +47,19 @@
             <div class="col s12 incoming_call">
                 <div class="caller_photo">
                     <img ng-src="{{contactData.avatar}}" alt=""/>
+
                 </div>
                 <div class="cn yellow darken-2">
                     Разговор с {{contactData.fio}}
                 </div>
                 <div class="btns dialup">
-                    <a ng-click="toggleSpeaker()" class="voff waves-effect waves-green">
-                        <i class="material-icons">volume_off</i>
+                    <a ng-click="toggleMute()" class="voff waves-effect waves-green">
+                        <i class="material-icons"  ng-if="muted">volume_off</i>
+                        <i class="material-icons"  ng-if="!muted">volume_up</i>
                     </a>
-                    <a ng-click="toggleMute()" class="mic_off waves-effect waves-red">
-                        <i class="material-icons ">mic_off</i>
+                    <a ng-click="toggleMic()" class="mic_off waves-effect waves-red">
+                        <i class="material-icons" ng-if="!mic_muted">mic_off</i>
+                        <i class="material-icons" ng-if="mic_muted">mic_on</i>
                     </a>
                     <a ng-click="goToDialog()" class="msg waves-effect waves-orange" >
                         <i class="material-icons">mail_outline</i>
@@ -72,5 +75,5 @@
         </div>
     </div>
 </div>
-
+<video-view></video-view>
 

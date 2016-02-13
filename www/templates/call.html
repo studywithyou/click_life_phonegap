@@ -1,29 +1,79 @@
-<div class="container">
+<div class="container" ng-if="!isCalling && !callInProgress">
     <div class="row">
         <div class="page_overlay">
-            <div class="col s12 av">
-                <div class="caller_avatar bg1">
-                    <img ng-src="{{userData.avatar}}" alt=""/>
+            <div class="col s12 incoming_call">
+                <div class="caller_photo">
+                    <img ng-src="{{contactData.avatar}}" alt=""/>
                 </div>
-            </div>
-
-            <div  ng-if="call_state==0" class="col caller_name s12">
-                Вызываем {{userData.fio}} ...
-            </div>
-            <div  ng-if="call_state==1" class="col caller_name s12">
-                Разговор  {{userData.fio}} ... ({{online_time}} сек.)
-            </div>
-            <div  ng-if="call_state==3" class="col caller_name s12">
-                Разговор завершен {{userData.fio}} ... ({{online_time}} сек.)
-            </div>
-            <div class="button">
-                <a ng-click="stopCall()"  ng-if="call_state != 3" class="btn btn-large red lighten-1 waves-effect waves-light call_action">
-                    Завершить
-                </a>
-                <a ng-click="returnHome()"  ng-if="call_state == 3" class="btn btn-large red lighten-1 waves-effect waves-light call_action">
-                    Вернуться в меню
-                </a>
+                <div class="cn yellow darken-2">{{contactData.fio}} вызывает</div>
+                <div class="btns">
+                    <a ng-click="answer()" class="confirm waves-effect waves-green">
+                        <i class="material-icons">call</i>
+                    </a>
+                    <a ng-click="ignore()" class="end waves-effect waves-red">
+                        <i class="material-icons ">call_end</i>
+                    </a>
+                    <a ng-click="goToDialog()" class="msg waves-effect waves-orange" >
+                        <i class="material-icons">mail_outline</i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="container" ng-if="isCalling && !callInProgress">
+    <div class="row">
+        <div class="page_overlay">
+            <div class="col s12 av">
+                <div class="caller_avatar bg1">
+                    <img ng-src="{{contactData.avatar}}" alt=""/>
+                </div>
+            </div>
+            <div class="col caller_name s12">
+                Вызываем {{contactData.fio}}
+            </div>
+            <div class="button">
+                <a ng-click="end()" class="btn btn-large red lighten-1 waves-effect waves-light call_action">Завершить</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="container" ng-if="callInProgress">
+    <div class="row">
+        <div class="page_overlay">
+            <div class="col s12 incoming_call">
+                <div class="caller_photo">
+                    <img ng-src="{{contactData.avatar}}" alt=""/>
+
+                </div>
+                <div class="cn yellow darken-2">
+                    Разговор с {{contactData.fio}}
+                </div>
+                <div class="btns dialup">
+                    <a ng-click="toggleMute()" class="voff waves-effect waves-green">
+                        <i class="material-icons"  ng-if="muted">volume_off</i>
+                        <i class="material-icons"  ng-if="!muted">volume_up</i>
+                    </a>
+                    <a ng-click="toggleMic()" class="mic_off waves-effect waves-red">
+                        <i class="material-icons" ng-if="!mic_muted">mic_off</i>
+                        <i class="material-icons" ng-if="mic_muted">mic_on</i>
+                    </a>
+                    <a ng-click="goToDialog()" class="msg waves-effect waves-orange" >
+                        <i class="material-icons">mail_outline</i>
+                    </a>
+                </div>
+            </div>
+            <div class="col caller_name mgt5 s12 ">
+                {{call_timer}}
+            </div>
+            <div class="button" ng-if="callInProgress">
+                <a ng-click="end()" class="btn btn-large red lighten-1 waves-effect waves-light call_action">Завершить</a>
+            </div>
+        </div>
+    </div>
+</div>
+<video-view></video-view>
+

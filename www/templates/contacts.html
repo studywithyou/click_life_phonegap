@@ -105,11 +105,12 @@
             ng-repeat="user in contacts"
             on-finish-render="ngRepeatFinished">
             <img ng-src="{{user.contact.avatar}}" alt="" class="circle" ng-click="chatWith(user)">
+            <span ng-if="user.group" class="usergroupicon"><i class="material-icons tiny">{{user.group.icon}}</i></span>
             <span class="title" >{{user.contact.fio}}</span>
             <p >
                 {{user.contact.username}}
                 <span  ng-if="user.group" class="contactgroup">
-                    <i class="material-icons tiny">{{user.group.icon}}</i>{{user.group.name}}
+                   {{user.group.name}}
                 </span>
             </p>
             <a  class="secondary-content dropdown-button" data-activates='dropdown_online_{{user.id}}'>
@@ -154,12 +155,13 @@
         <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.contact.is_online == 1]"
              ng-repeat="user in contacts"
              on-finish-render="ngRepeatFinished">
-            <img ng-src="{{user.contact.avatar}}" alt="" class="circle" ng-click="chatWith(user)">
-            <span class="title" >{{user.contact.fio}}</span>
+            <img ng-src="{{user.contact.avatar}}" alt="" ng-click="chatWith(user)" class="circle" ng-click="chatWith(user)">
+            <span ng-if="user.group" class="usergroupicon"><i class="material-icons tiny">{{user.group.icon}}</i></span>
+            <span class="title" ng-click="chatWith(user)" >{{user.contact.fio}}</span>
             <p >
                 {{user.contact.username}}
-                <span  ng-if="user.group" class="contactgroup">
-                    <i class="material-icons tiny">{{user.group.icon}}</i>{{user.group.name}}
+                <span  ng-if="user.group" class="contactgroupname">
+                    [ {{user.group.name}} ]
                 </span>
             </p>
             <a  class="secondary-content dropdown-button" data-activates='dropdown_{{user.id}}'>
@@ -179,19 +181,13 @@
                 </li>
                 <li class="divider" ng-if="user.contact.is_online == 1"></li>
                 <li>
-                    <a ng-click="renameUser(user)">
-                        <i class="material-icons small">create</i>
-                    </a>
-                </li>
-                <li class="divider"></li>
-                <li>
                     <a ng-click="editUserGroup(user)">
                         <i class="material-icons small">group</i>
                     </a>
                 </li>
                 <li class="divider"></li>
                 <li>
-                    <a ng-click="removeContact(user)">
+                    <a ng-click="removeContact(user, $index)">
                         <i class="material-icons small">delete</i>
                     </a>
                 </li>
@@ -226,6 +222,7 @@
             <a  class="modal-action modal-close waves-effect waves-red btn-flat ">Отменить</a>
         </div>
     </div>
+
 </div>
 <div id="groups" class="col s12">
     <ul class="collection">

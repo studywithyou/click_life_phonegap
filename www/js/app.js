@@ -1032,7 +1032,29 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
             console.log(data);
             location.href="#dialog/"+data.dialog;
         });
-    }
+    };
+
+    $scope.callToUser = function(user){
+        return callService.callTo(user.contact);
+    };
+
+    $scope.removeContact = function(user, index){
+        navigator.notification.confirm(
+            'Удалить '+user.contact.fio+"  из Ваших контактов ?", // message
+            function(answer){
+                if(answer == '1'){
+                    //delete
+                    $scope.contacts.splice(index, 1);
+                    io.socket.get("/contacts/delete_contact",{contact: user.id}, function(){});
+                }else{
+                    //nothing
+                }
+            },
+            'Подтвердите удаление',           // title
+            ['Да','Нет']     // buttonLabels
+        );
+    };
+
 });
 
 /****************************************************************************

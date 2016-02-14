@@ -1253,6 +1253,21 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
 /*** call ***/
 clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,$timeout, $routeParams, music, callService, msg,Auth){
     callService.nowOnCall = true;
+    cordova.plugins.phonertc.setVideoView({
+        container: document.getElementById('videoContainer'),
+        local: {
+            position: [1, 1],
+            size: [1, 1],
+            containerParams: {
+                position: [1, 1],
+                size: [1, 1],
+            }
+        },
+        containerParams: {
+            position: [1, 1],
+            size: [1, 1],
+        }
+    });
     var duplicateMessages = [];
     $scope.isCalling = ($routeParams.isCalling == '1') ? true: false;
     $scope.callInProgress = false;
@@ -1426,7 +1441,6 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         var session = new cordova.plugins.phonertc.Session(config);
 
         session.on('sendMessage', function (data) {
-            cordova.plugins.phonertc.hideVideoView();
             msg.emit('sendMessage', contactName, {
                 type: 'phonertc_handshake',
                 data: JSON.stringify(data)
@@ -1455,7 +1469,6 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         //console.log("Recieved_locally",data);
         var name = data.from;
         var message = data.message;
-        cordova.plugins.phonertc.hideVideoView();
         if(message.type == "answer"){
             $scope.$apply(function () {
                 music.stop("incoming_call");
@@ -1561,17 +1574,3 @@ clicklife.controller("CashCtrl", function($scope, $location){
 
 });
 clicklife.controller("ProfileCtrl", function($scope, $location){});
-clicklife.directive('videoView', function ($rootScope, $timeout) {
-    return {
-        restrict: 'E',
-        template: '<div class="video-container"></div>',
-        replace: true,
-        link: function (scope, element, attrs) {
-            function updatePosition() {
-                cordova.plugins.phonertc.hideVideoView();
-            }
-            $timeout(updatePosition, 500);
-            $rootScope.$on('videoView.updatePosition', updatePosition);
-        }
-    }
-});

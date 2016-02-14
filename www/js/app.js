@@ -1259,7 +1259,6 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
            position:[10,10]
        },
        local: false,
-
     });
     var duplicateMessages = [];
     $scope.isCalling = ($routeParams.isCalling == '1') ? true: false;
@@ -1276,6 +1275,14 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
             $scope.mic_muted = true;
             music.toggleMicrophone("on");
         }
+    };
+    $scope.toggleMute = function () {
+        $scope.muted = !$scope.muted;
+        Object.keys($scope.streams).forEach(function (contact) {
+            var session = $scope.streams[contact];
+            session.streams.audio = !$scope.muted;
+            session.renegotiate();
+        });
     };
     $scope.contactData= {};
     $scope.call_timer = 0;

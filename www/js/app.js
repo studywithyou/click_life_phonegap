@@ -229,15 +229,17 @@ clicklife.run(function($rootScope, $interval,$timeout, msg, music,$location,Auth
 
 clicklife.run(function( msg, callService,$timeout){
     msg.on("messageReceived", function(data){
-        console.log("messageReceivedGlobal",data);
         if(data.message.type == 'call'){
-            if(! callService.nowOnCall){
+            if(!callService.nowOnCall){
                 $timeout(function(){
                     callService.nowOnCall = true;
                     window.location.href = "#call/"+data.from+"/0";
                 },0);
+            }else{
+                //i`m busy now
+                console.log("Incoming call requested, but i`m already in call... Ignoring");
+                msg.emit('sendMessage', data.from, { type: 'busy' });
             }
-
         }
 
     });
@@ -483,7 +485,7 @@ clicklife.service("music", function(){
                 that.stop(sound);
             }catch(e){}
         }
-        return;
+        return true;
     };
     this.setStreamType = function(type){
         if(type != that.STREAM_MUSIC &&
@@ -522,7 +524,9 @@ clicklife.service("music", function(){
      * @param muted string "on" || "off"
      * ***/
     this.toggleMicrophone = function(muted){
-        try{ Media.mute_microphone(muted)} catch(e){console.log(e)};
+        try{
+            Media.mute_microphone(muted);
+        } catch(e){console.log(e)};
     };
 
     /*** togle speakerPhone
@@ -543,16 +547,15 @@ clicklife.service("music", function(){
         }
         try{
             Media.setStreamType(streamType);
-        } catch(e){}
+        } catch(e){ console.log(e);}
 
         if(typeof(now_playing[sound])!= 'undefined'){
-            now_playing[sound].play();
-            return true;
+            now_playing[sound].stop();
+            delete now_playing[sound];
         };
         var filename = asset_url+ sound + ".mp3";
-
-        now_playing[sound] = new Media(filename, null, function MediaError(){
-            console.log("Music play Error");
+        now_playing[sound] = new Media(filename, null, function MediaError(e){
+            console.log("Music play Error", e);
         }, function(status){
             if(loopSong && status==Media.MEDIA_STOPPED){
                 window.setTimeout(function(){
@@ -1281,6 +1284,8 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
             $interval.cancel($scope.timer.ti);
         }
     };
+
+
     // all call sessions
     $scope.sessions = {};
     io.socket.get("/user/get_data_by_uname",{uname: $scope.contactName}, function(data){
@@ -1288,14 +1293,48 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
             $scope.contactData = data;
         });
     });
-
     if($scope.isCalling){
         //caller is me
         console.log("I`m caller sending session request by firstTime");
         msg.emit('sendMessage', $routeParams.contactName, { type: 'call' });
+        music.setStreamType("ring");
+        music.play("outcoming_call",true, 500);
+    }else{
+        if(!$scope.callInProgress){
+            // incoming call
+            music.setStreamType("ring");
+            music.play("incoming_call",true, 500);
+        }
     }
 
+    $scope.contactIsBusy = function(name){
+        Materialize.toast("Пользователь "+name+" не может взять трубку");
+       if($scope.callInProgress){ return false; }
 
+        if($scope.isCalling && name == $scope.contactName){
+           //если это контакт которому звонили, и других нету - звонок завершен
+           music.stop("outcoming_call");
+           music.setStreamType("ring");
+           music.play("call_busy",0);
+          $location.path("/contacts");
+       }
+    };
+
+    $scope.callEnded = function(reason){
+        music.stopAll();
+        //will calls on call will be end
+        Materialize.toast(reason,1000);
+        music.setStreamType("ring");
+        music.play("call_busy",0);
+        $location.path("/contacts");
+    };
+
+    $scope.callAnswered = function(){
+       $scope.callInProgress = true;
+       music.stop("incoming_call");
+        music.stop("outcomin_call");
+       $scope.timer.start();
+    };
     // to answer INCOMING call
     $scope.answer = function () {
         if ($scope.callInProgress) {
@@ -1304,6 +1343,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         }
         $scope.callInProgress = true;
         call(false, $routeParams.contactName);
+        $scope.callAnswered();
         setTimeout(function () {
             console.log('Incoming session ACCEPTED sending answer');
             msg.emit('sendMessage', $routeParams.contactName, { type: 'answer' });
@@ -1322,7 +1362,6 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         }
     };
 
-
     $scope.end = function () {
         Object.keys($scope.sessions).forEach(function (contact) {
             $scope.sessions[contact].close();
@@ -1330,6 +1369,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
             console.log("I have some sessions. Rejecting "+contact+" ... : call session.close();");
         });
     };
+
 
 
     function call(isInitiator, contactName) {
@@ -1390,6 +1430,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         if(message.type == "answer"){
             $scope.$apply(function () {
                 $scope.callInProgress = true;
+                $scope.callAnswered();
             });
             var allSessions = Object.keys($scope.sessions);
             if (allSessions.length !== 0) {
@@ -1419,9 +1460,12 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
                     }
                     if (Object.keys($scope.sessions).length === 0) {
                         console.log("Not having any more sessions, should leave call");
+                        $scope.callEnded("Пользователь отклонил звонок");
                     }
                 } else {
+
                     console.log("Ignore recieved from "+name+" but all sessions empty");
+                    $scope.callEnded("Пользователь отклонил звонок");
                 }
             }else{
                 if(message.type == "phonertc_handshake"){
@@ -1454,6 +1498,13 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
                            }
 
                        });
+                   }else{
+                       if(message.type == "busy"){
+                           console.log("I tried to call user "+name+ "but he is busy now, close session");
+                           $scope.contactIsBusy(name);
+                       }else{
+                           console.log("Unknown TYPE: ",message.type);
+                       }
                    }
                 }
             }

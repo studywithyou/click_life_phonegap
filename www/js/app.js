@@ -1253,7 +1253,6 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
 /*** call ***/
 clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,$timeout, $routeParams, music, callService, msg,Auth){
     callService.nowOnCall = true;
-
     var duplicateMessages = [];
     $scope.isCalling = ($routeParams.isCalling == '1') ? true: false;
     $scope.callInProgress = false;

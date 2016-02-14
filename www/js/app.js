@@ -1052,14 +1052,6 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
     var initDialog = function(){
         io.socket.get("/dialog/get_messages",{dialog: $scope.dialogId}, function(data){
             giftsService.getAll(function(gifts){
-                angular.forEach($scope.messages, function(m,k){
-                    if(m.from.id != Auth.getUser().id && m.readed == 0){
-                        io.socket.get("/dialog/update_message_status",{
-                            message: m.id,
-                            dialog: $scope.dialogId
-                        }, function(){});
-                    }
-                });
                 $timeout(function() {
                     $("#messages").animate({
                         scrollTop: $("#messages .container").height()
@@ -1068,11 +1060,22 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
                 }, 10, false);
                 data.messages = data.messages.reverse();
                 $scope.messages = data.messages;
-
                 $scope.dialogIcon = data.dialogIcon;
                 $scope.dialogName = data.dialogName;
                 $scope.showPreloader = false;
                 $scope.gifts = gifts;
+                angular.forEach($scope.messages, function(m,k){
+                    if(m.from.id != Auth.getUser().id && m.readed == 0){
+                        io.socket.get("/dialog/update_message_status",{
+                            message: m.id,
+                            dialog: $scope.dialogId
+                        }, function(){
+                            $timeout(function(){
+                                $scope.messages[k].readed = 1;
+                            },0);
+                        });
+                    }
+                });
                 $scope.$apply();
                 $timeout(function(){
                     $('.materialboxed').materialbox();
@@ -1082,7 +1085,7 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
         });
         // on Type
         io.socket.on("typing", function(data){
-            console.log("typing",data);
+            //console.log("typing",data);
             if(data.dialog == $scope.dialogId  && data.name != Auth.getUser().fio){
                 $scope.typestatus = 1;
                 $scope.typeName = data.name;
@@ -1107,8 +1110,8 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
                     music.play("new_message");
                 }
                 $scope.messages.push(data);
-                if($scope.messages.length > 50){
-                    $scope.messages.slice(20);
+                if($scope.messages.length > 60){
+                    $scope.messages.slice(40);
                 }
                 $scope.showPreloader = false;
                 $scope.$apply();
@@ -1126,7 +1129,7 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
         // on update_message_status
         io.socket.on("update_message_status", function(data){
             angular.forEach($scope.messages, function(msg,key){
-                if(msg.id == data.message && msg.from.id == Auth.getUser().id){
+                if(msg.id == data.message){
                     $scope.messages[key].readed = 1;
                     $scope.$apply();
                 }
@@ -1148,7 +1151,7 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
     var keyups = 0;
     $scope.imTyping = function($event){
         keyups++;
-        if((keyups % 9 == 0) || keyups == 1){
+        if((keyups % 8 == 0) || keyups == 1){
             io.socket.get("/dialog/typing",{dialog: $scope.dialogId}, function(){
                 //console.log("keyup sent");
             });
@@ -1250,6 +1253,7 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
 /*** call ***/
 clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,$timeout, $routeParams, music, callService, msg,Auth){
     callService.nowOnCall = true;
+
     var duplicateMessages = [];
     $scope.isCalling = ($routeParams.isCalling == '1') ? true: false;
     $scope.callInProgress = false;
@@ -1345,6 +1349,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         call(false, $routeParams.contactName);
         $scope.callAnswered();
         setTimeout(function () {
+            cordova.plugins.phonertc.hideVideoView();
             console.log('Incoming session ACCEPTED sending answer');
             msg.emit('sendMessage', $routeParams.contactName, { type: 'answer' });
         }, 1500);
@@ -1395,6 +1400,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         var session = new cordova.plugins.phonertc.Session(config);
 
         session.on('sendMessage', function (data) {
+            cordova.plugins.phonertc.hideVideoView();
             msg.emit('sendMessage', contactName, {
                 type: 'phonertc_handshake',
                 data: JSON.stringify(data)
@@ -1402,7 +1408,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         });
 
         session.on('answer', function () {
-
+            cordova.plugins.phonertc.hideVideoView();
         });
 
         session.on('disconnect', function () {
@@ -1423,6 +1429,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         //console.log("Recieved_locally",data);
         var name = data.from;
         var message = data.message;
+        cordova.plugins.phonertc.hideVideoView();
         if(message.type == "answer"){
             $scope.$apply(function () {
                 music.stop("incoming_call");
@@ -1535,15 +1542,8 @@ clicklife.directive('videoView', function ($rootScope, $timeout) {
         replace: true,
         link: function (scope, element, attrs) {
             function updatePosition() {
-                cordova.plugins.phonertc.setVideoView({
-                    container: element[0],
-                    local: {
-                        position: [0, 0],
-                        size: [0, 0]
-                    }
-                });
+                cordova.plugins.phonertc.hideVideoView();
             }
-
             $timeout(updatePosition, 500);
             $rootScope.$on('videoView.updatePosition', updatePosition);
         }

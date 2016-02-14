@@ -34,7 +34,7 @@
                 Вызываем {{contactData.fio}}
             </div>
             <div class="button">
-                <a ng-click="end()" class="btn btn-large red lighten-1 waves-effect waves-light call_action">Завершить</a>
+                <a ng-click="ignore()" class="btn btn-large red lighten-1 waves-effect waves-light call_action">Завершить</a>
             </div>
         </div>
     </div>
@@ -47,7 +47,6 @@
             <div class="col s12 incoming_call">
                 <div class="caller_photo">
                     <img ng-src="{{contactData.avatar}}" alt=""/>
-
                 </div>
                 <div class="cn yellow darken-2">
                     Разговор с {{contactData.fio}}
@@ -59,7 +58,7 @@
                     </a>
                     <a ng-click="toggleMic()" class="mic_off waves-effect waves-red">
                         <i class="material-icons" ng-if="!mic_muted">mic_off</i>
-                        <i class="material-icons" ng-if="mic_muted">mic_on</i>
+                        <i class="material-icons" ng-if="mic_muted">mic</i>
                     </a>
                     <a ng-click="goToDialog()" class="msg waves-effect waves-orange" >
                         <i class="material-icons">mail_outline</i>
@@ -70,10 +69,10 @@
                 {{call_timer}}
             </div>
             <div class="button" ng-if="callInProgress">
-                <a ng-click="end()" class="btn btn-large red lighten-1 waves-effect waves-light call_action">Завершить</a>
+                <a ng-click="endCall()" class="btn btn-large red lighten-1 waves-effect waves-light call_action">Завершить</a>
             </div>
         </div>
     </div>
 </div>
-<video-view></video-view>
+<div id="videoContainer"></div>
 

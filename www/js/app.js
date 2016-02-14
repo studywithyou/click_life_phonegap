@@ -162,6 +162,7 @@ clicklife.config(function($routeProvider){
  */
 clicklife.run(function($rootScope,$location, callService) {
     $rootScope.$on("$routeChangeSuccess",function(event, current, prev){
+        callService.currentRoute = current.templateUrl;
         if (
             current.templateUrl == "templates/login.html" ||
             current.templateUrl == "templates/confirm_success.html" ||
@@ -229,15 +230,14 @@ clicklife.run(function($rootScope, $interval,$timeout, msg, music,$location,Auth
 
 clicklife.run(function( msg, callService,$timeout){
     msg.on("messageReceived", function(data){
-        console.log("messageReceivedGlobal",data);
         if(data.message.type == 'call'){
-            if(! callService.nowOnCall){
+            if(callService.currentRoute == "templates/call.html"){
+                console.log("Incoming call requested, but i`m already in call... Ignoring");
+            }else{
                 $timeout(function(){
-                    callService.nowOnCall = true;
                     window.location.href = "#call/"+data.from+"/0";
                 },0);
             }
-
         }
 
     });
@@ -288,7 +288,6 @@ clicklife.factory("Auth", function($interval, $location){
 
     };
     return{
-
         watchMe: function($scope){
             $scope.$watch(Auth.isLoggedIn, function (value, oldValue) {
                 if(!value && oldValue) {
@@ -366,7 +365,7 @@ clicklife.factory("msg", function(Auth){
 });
 /*** call service ***/
 clicklife.service("callService", function(User){
-    var that = this;
+   var that = this;
    this.initCall = function(username){
        window.location.href="#call/"+username+"/1";
    } ;
@@ -387,6 +386,7 @@ clicklife.service("callService", function(User){
         that.initCall(user.username);
     };
 
+    this.currentRoute = "";
 });
 /***
  * Video Service
@@ -483,7 +483,7 @@ clicklife.service("music", function(){
                 that.stop(sound);
             }catch(e){}
         }
-        return;
+        return true;
     };
     this.setStreamType = function(type){
         if(type != that.STREAM_MUSIC &&
@@ -519,20 +519,18 @@ clicklife.service("music", function(){
     };
 
     /*** togle mute microphone
-     * @param muted string "on" || "off"
+     * @param muted bool
      * ***/
-    this.toggleMicrophone = function(muted){
-        try{ Media.mute_microphone(muted)} catch(e){console.log(e)};
+    this.muteMicrophone = function(muted){
+        try{
+            Media.mute_microphone(muted);
+        } catch(e){console.log(e)};
     };
 
     /*** togle speakerPhone
      * @param bool state - true = speaker is on, false = speaker is off
      * ****/
     this.toggleSpeaker = function(state){
-        try{
-            return Media.toggle_speaker(state);
-        }catch(e){ console.log(e);}
-
     };
 
     //play sound
@@ -543,16 +541,15 @@ clicklife.service("music", function(){
         }
         try{
             Media.setStreamType(streamType);
-        } catch(e){}
+        } catch(e){ console.log(e);}
 
         if(typeof(now_playing[sound])!= 'undefined'){
-            now_playing[sound].play();
-            return true;
+            now_playing[sound].stop();
+            delete now_playing[sound];
         };
         var filename = asset_url+ sound + ".mp3";
-
-        now_playing[sound] = new Media(filename, null, function MediaError(){
-            console.log("Music play Error");
+        now_playing[sound] = new Media(filename, null, function MediaError(e){
+            console.log("Music play Error", e);
         }, function(status){
             if(loopSong && status==Media.MEDIA_STOPPED){
                 window.setTimeout(function(){
@@ -1039,7 +1036,7 @@ clicklife.controller("ContactsCtrl", function($scope,music, Auth, $location){
 /****************************************************************************
  * Chat
  * *******/
-clicklife.controller("ChatCtrl", function($scope, $routeParams,callService, music, $location,$timeout, giftsService, image, Video,Auth){
+clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService, music, $location,$timeout, giftsService, image, Video){
 
     $('.modal-trigger').leanModal();
     jqComponents.initTogler();
@@ -1051,14 +1048,6 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams,callService, musi
     var initDialog = function(){
         io.socket.get("/dialog/get_messages",{dialog: $scope.dialogId}, function(data){
             giftsService.getAll(function(gifts){
-                angular.forEach($scope.messages, function(m,k){
-                    if(m.from.id != Auth.getUser().id && m.readed == 0){
-                        io.socket.get("/dialog/update_message_status",{
-                            message: m.id,
-                            dialog: $scope.dialogId
-                        }, function(){});
-                    }
-                });
                 $timeout(function() {
                     $("#messages").animate({
                         scrollTop: $("#messages .container").height()
@@ -1067,11 +1056,22 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams,callService, musi
                 }, 10, false);
                 data.messages = data.messages.reverse();
                 $scope.messages = data.messages;
-
                 $scope.dialogIcon = data.dialogIcon;
                 $scope.dialogName = data.dialogName;
                 $scope.showPreloader = false;
                 $scope.gifts = gifts;
+                angular.forEach($scope.messages, function(m,k){
+                    if(m.from.id != Auth.getUser().id && m.readed == 0){
+                        io.socket.get("/dialog/update_message_status",{
+                            message: m.id,
+                            dialog: $scope.dialogId
+                        }, function(){
+                            $timeout(function(){
+                                $scope.messages[k].readed = 1;
+                            },0);
+                        });
+                    }
+                });
                 $scope.$apply();
                 $timeout(function(){
                     $('.materialboxed').materialbox();
@@ -1081,7 +1081,7 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams,callService, musi
         });
         // on Type
         io.socket.on("typing", function(data){
-            console.log("typing",data);
+            //console.log("typing",data);
             if(data.dialog == $scope.dialogId  && data.name != Auth.getUser().fio){
                 $scope.typestatus = 1;
                 $scope.typeName = data.name;
@@ -1106,8 +1106,8 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams,callService, musi
                     music.play("new_message");
                 }
                 $scope.messages.push(data);
-                if($scope.messages.length > 50){
-                    $scope.messages.slice(20);
+                if($scope.messages.length > 60){
+                    $scope.messages.slice(40);
                 }
                 $scope.showPreloader = false;
                 $scope.$apply();
@@ -1125,7 +1125,7 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams,callService, musi
         // on update_message_status
         io.socket.on("update_message_status", function(data){
             angular.forEach($scope.messages, function(msg,key){
-                if(msg.id == data.message && msg.from.id == Auth.getUser().id){
+                if(msg.id == data.message){
                     $scope.messages[key].readed = 1;
                     $scope.$apply();
                 }
@@ -1147,7 +1147,7 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams,callService, musi
     var keyups = 0;
     $scope.imTyping = function($event){
         keyups++;
-        if((keyups % 9 == 0) || keyups == 1){
+        if((keyups % 8 == 0) || keyups == 1){
             io.socket.get("/dialog/typing",{dialog: $scope.dialogId}, function(){
                 //console.log("keyup sent");
             });
@@ -1247,25 +1247,38 @@ clicklife.controller("ChatCtrl", function($scope, $routeParams,callService, musi
 });
 
 /*** call ***/
-clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,$timeout, $routeParams, music, callService, msg){
+clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,$timeout, $routeParams, music, callService, msg,Auth){
     callService.nowOnCall = true;
+   cordova.plugins.phonertc.setVideoView({
+       containerParams:{
+           size:[10,10],
+           position:[10,10]
+       },
+       local: false,
+    });
     var duplicateMessages = [];
     $scope.isCalling = ($routeParams.isCalling == '1') ? true: false;
     $scope.callInProgress = false;
     $scope.contactName = $routeParams.contactName;
-    $scope.allContacts = [];
-    $scope.contacts = {};
-    $scope.hideFromContactList = [$scope.contactName];
+    $scope.currentName = Auth.getUser().username;
     $scope.muted = false;
     $scope.mic_muted = false;
     $scope.toggleMic = function(){
         if($scope.mic_muted){
-            music.toggleMicrophone("off");
+            music.muteMicrophone(false);
             $scope.mic_muted = false;
         }else{
             $scope.mic_muted = true;
-            music.toggleMicrophone("on");
+            music.muteMicrophone(true);
         }
+    };
+    $scope.toggleMute = function () {
+        $scope.muted = !$scope.muted;
+        Object.keys($scope.streams).forEach(function (contact) {
+            var session = $scope.streams[contact];
+            session.streams.audio = !$scope.muted;
+            session.renegotiate();
+        });
     };
     $scope.contactData= {};
     $scope.call_timer = 0;
@@ -1283,52 +1296,131 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
             $interval.cancel($scope.timer.ti);
         }
     };
+
+
+    // all call sessions
+    $scope.sessions = {};
     io.socket.get("/user/get_data_by_uname",{uname: $scope.contactName}, function(data){
         $scope.$apply(function(){
             $scope.contactData = data;
         });
     });
-    //when call ended
-    $scope.afterCallEnded = function(){
-        music.stopAll();
+    if($scope.isCalling){
+        //caller is me
+        console.log("I`m caller sending session request by firstTime");
+        msg.emit('sendMessage', $routeParams.contactName, { type: 'call' });
         music.setStreamType("ring");
-        music.play("call_busy",false,0);
-        $scope.timer.stop();
-        console.log("on call ended!");
-        Materialize.toast("Звонок завершен",2000);
-        window.location.href="#contacts";
-    };
-    $scope.beforeCallStarted = function(){
-        music.stopAll();
-        music.setStreamType("ring");
-        if($scope.isCalling){
-            music.play("outcoming_call",true,500);
-        }else{
-            music.play("incoming_call",true,500);
-        }
-        if ($scope.isCalling) {
-            $scope.answered = false;
-            msg.emit('sendMessage', $routeParams.contactName, { type: 'call' });
-            console.log("send invite");
-        }else{
+        music.play("outcoming_call",true, 500);
 
+    }else{
+        if(!$scope.callInProgress){
+            // incoming call
+            console.log("looks like its incoming call)))");
+            music.setStreamType("ring");
+            music.play("incoming_call",true, 500);
         }
-        console.log("beforeCallCreated!");
+    }
+
+    $scope.contactIsBusy = function(name){
+        Materialize.toast("Пользователь "+name+" не может взять трубку");
+       if($scope.callInProgress){ return false; }
+
+        if($scope.isCalling && name == $scope.contactName){
+           //если это контакт которому звонили, и других нету - звонок завершен
+           music.stop("outcoming_call");
+           music.setStreamType("ring");
+           music.play("call_busy",0);
+            callService.nowOnCall = false;
+          $location.path("/contacts");
+       }
     };
-    $scope.afterCallAnswered = function(){
-        $scope.answered = true;
-        // $scope.callInProgress = true;
+
+    $scope.callEnded = function(reason){
         music.stopAll();
+        //will calls on call will be end
+        Materialize.toast(reason,1000);
+        music.setStreamType("ring");
+        music.play("call_busy",0);
+        $location.path("/contacts");
+    }
+
+    $scope.callAnswered = function(){
         $scope.timer.start();
-        console.log("callAnswered");
     };
-    $scope.afterCallWasAborted = function(){
-
-       // $scope.afterCallEnded();
+    // to answer INCOMING call
+    $scope.answer = function () {
+        music.stop("incoming_call");
+        music.stop("outcoming_call");
+        if ($scope.callInProgress) {
+            console.log("You cannot answer, call is in progress now");
+            return;
+        }
+        $scope.callInProgress = true;
+        call(false, $routeParams.contactName);
+        $scope.callAnswered();
+        setTimeout(function () {
+            //cordova.plugins.phonertc.hideVideoView();
+            console.log('Incoming session ACCEPTED sending answer');
+            msg.emit('sendMessage', $routeParams.contactName, { type: 'answer' });
+        }, 1500);
+    };
+    $scope.ignore = function () {
+        var contactNames = Object.keys($scope.sessions);
+        if(contactNames.length > 0) {
+            $scope.sessions[contactNames[0]].disconnect();
+            console.log("I have "+contactNames.length+" sessions. rejecting "+contactNames[0]+" ... : call session.disconnect();");
+        } else {
+            music.stopAll();
+            msg.emit('sendMessage', $routeParams.contactName, { type: 'ignore' });
+            console.log($routeParams.contactName+" called, but i was rejected, leaving call state");
+            $location.path("/contacts");
+        }
+    };
+    $scope.endCall = function () {
+        Object.keys($scope.sessions).forEach(function (contact) {
+            $scope.sessions[contact].close();
+            delete $scope.sessions[contact];
+            console.log("I have some sessions. Rejecting "+contact+" ... : call session.close();");
+        });
     };
 
+    /*** go to dialog ***/
+    // if call in progress ends call, else send ignore key
+    $scope.goToDialog = function(){
+        //location.href="#chat/"+user.contact.id;
+        Materialize.toast("Подождите...",560);
+        io.socket.get("/dialog/join",{ user: $scope.contactData.id}, function(data){
+            //console.log(data);
+            if($scope.callInProgress){
+                Object.keys($scope.sessions).forEach(function (contact) {
+                    $scope.sessions[contact].close();
+                    delete $scope.sessions[contact];
+                    console.log("I have some sessions. Rejecting "+contact+" ... : call session.close();");
+                });
+            }else{
+                var contactNames = Object.keys($scope.sessions);
+                if(contactNames.length > 0) {
+                    $scope.sessions[contactNames[0]].disconnect();
+                    console.log("I have "+contactNames.length+" sessions. rejecting "+contactNames[0]+" ... : call session.disconnect();");
+                } else {
+                    msg.emit('sendMessage', $routeParams.contactName, { type: 'ignore' });
+                    console.log($routeParams.contactName+" called, but i was rejected, leaving call state");
+                }
+            }
+            music.stopAll();
+            location.href="#dialog/"+data.dialog;
+        });
+    };
     function call(isInitiator, contactName) {
         console.log(new Date().toString() + ': calling to ' + contactName + ', isInitiator: ' + isInitiator);
+
+        if($scope.sessions[contactName]){
+
+           return  console.warn("Cannot call to user "+ contactName + " session already connected, BREAK CALL");
+
+        }
+
+
         var config = {
             isInitiator: isInitiator,
             turn: {
@@ -1341,195 +1433,132 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
                 video: false
             }
         };
+
         var session = new cordova.plugins.phonertc.Session(config);
+
         session.on('sendMessage', function (data) {
             msg.emit('sendMessage', contactName, {
                 type: 'phonertc_handshake',
                 data: JSON.stringify(data)
             });
         });
+
         session.on('answer', function () {
-            console.log('Answered!');
+            //cordova.plugins.phonertc.hideVideoView();
         });
+
         session.on('disconnect', function () {
-            if ($scope.contacts[contactName]) {
-                delete $scope.contacts[contactName];
+            if ($scope.sessions[contactName]) {
+                delete $scope.sessions[contactName];
             }
-            if (Object.keys($scope.contacts).length === 0) {
+
+            if (Object.keys($scope.sessions).length === 0) {
                 msg.emit('sendMessage', contactName, { type: 'ignore' });
-                $scope.afterCallEnded();
+                $location.path("/contacts");
             }
         });
+
         session.call();
-        $scope.contacts[contactName] = session;
-    }
-    //init call
-    $scope.beforeCallStarted();
-
-    $scope.ignore = function () {
-        var contactNames = Object.keys($scope.contacts);
-        if (contactNames.length > 0) {
-            $scope.contacts[contactNames[0]].disconnect();
-        } else {
-            msg.emit('sendMessage', $routeParams.contactName, { type: 'ignore' });
-           // $scope.afterCallEnded();
-            $scope.afterCallEnded();
-        }
+        $scope.sessions[contactName] = session;
     };
-
-    $scope.end = function () {
-
-        Object.keys($scope.contacts).forEach(function (contact) {
-            $scope.contacts[contact].close();
-            delete $scope.contacts[contact];
-        });
-
-        $scope.afterCallEnded();
-    };
-
-    $scope.goToDialog = function(){
-        music.stopAll();
-        Object.keys($scope.contacts).forEach(function (contact) {
-            $scope.contacts[contact].close();
-            delete $scope.contacts[contact];
-        });
-        music.setStreamType("ring");
-        music.play("call_ended",false,0);
-        music.stopAll();
-        $scope.timer.stop();
-        io.socket.get("/dialog/join",{ user: $scope.contactData.id}, function(data){
-            io.socket.get("/dialog/add_message",{
-                dialog: data.dialog,
-                text:"Звонок завершен. Продолжительность: "+$scope.call_timer+"сек."
-            }, function(){
-                $timeout(function(){
-                    location.href="#dialog/"+data.dialog;
-                },0);
-            });
-        });
-    };
-
-    $scope.answer = function () {
-        music.stopAll();
-        if ($scope.callInProgress) { return; }
-        $scope.callInProgress = true;
-        cordova.plugins.phonertc.hideVideoView();
-
-        call(false, $routeParams.contactName);
-        $scope.afterCallAnswered();
-        setTimeout(function () {
-            console.log('sending answer');
-            msg.emit('sendMessage', $routeParams.contactName, { type: 'answer' });
-        }, 1500);
-    };
-
-    $scope.updateVideoPosition = function () {
-       // $rootScope.$broadcast('videoView.updatePosition');
-    };
-
-    $scope.openSelectContactModal = function () {
-        cordova.plugins.phonertc.hideVideoView();
-       // $scope.selectContactModal.show();
-    };
-
-    $scope.closeSelectContactModal = function () {
-        //cordova.plugins.phonertc.showVideoView();
-        //$scope.selectContactModal.hide();
-    };
-
-    $scope.addContact = function (newContact) {
-        $scope.hideFromContactList.push(newContact);
-        msg.emit('sendMessage', newContact, { type: 'call' });
-        cordova.plugins.phonertc.hideVideoView();
-    };
-
-    $scope.hideCurrentUsers = function () {
-        return function (item) {
-            return $scope.hideFromContactList.indexOf(item) === -1;
-        };
-    };
-
-    $scope.toggleMute = function () {
-        $scope.muted = !$scope.muted;
-        Object.keys($scope.contacts).forEach(function (contact) {
-            var session = $scope.contacts[contact];
-            session.streams.audio = !$scope.muted;
-            session.renegotiate();
-        });
-    };
-
     function onMessageReceive (data) {
         //console.log("Recieved_locally",data);
         var name = data.from;
         var message = data.message;
-        if(message.type == "answer" ){
+        if(message.type == "answer"){
             $scope.$apply(function () {
+                music.stop("incoming_call");
+                music.stop("outcoming_call");
                 $scope.callInProgress = true;
-               // $timeout($scope.updateVideoPosition, 1000);
-                cordova.plugins.phonertc.hideVideoView();
-                $scope.afterCallAnswered();
+                $scope.callAnswered();
             });
-
-            var existingContacts = Object.keys($scope.contacts);
-            if (existingContacts.length !== 0) {
+            var allSessions = Object.keys($scope.sessions);
+            if (allSessions.length !== 0) {
+                console.log("Having a Group call, "+allSessions.length+" sessions active");
                 msg.emit('sendMessage', name, {
                     type: 'add_to_group',
-                    contacts: existingContacts,
+                    contacts: allSessions,
                     isInitiator: false
                 });
             }
-            call(true, name);
-
-        }
-        if(message.type == "ignore"){
-            var len = Object.keys($scope.contacts).length;
-            if (len > 0) {
-                if ($scope.contacts[name]) {
-                    $scope.contacts[name].close();
-                    delete $scope.contacts[name];
-                }
-
-                var i = $scope.hideFromContactList.indexOf(name);
-                if (i > -1) {
-                    $scope.hideFromContactList.splice(i, 1);
-                }
-
-                if (Object.keys($scope.contacts).length === 0) {
-
-                    $scope.afterCallEnded();
-                }
-            } else {
-                $scope.afterCallEnded();
+            if ($scope.sessions[name]) {
+                console.log("Session named: "+name+" already connected, recieved his answer, DELETING");
+                $scope.sessions[name].close();
+                delete $scope.sessions[name];
+            }else{
+                console.log("type: Answer: Call as initiator with session:" +name);
+                call(true, name);
             }
-        }
-        if(message.type == "phonertc_handshake"){
-            if (duplicateMessages.indexOf(message.data) === -1) {
-                $scope.contacts[name].receiveMessage(JSON.parse(message.data));
-                duplicateMessages.push(message.data);
-            }
-        }
-        if(message.type == "add_to_group"){
-            message.contacts.forEach(function (contact)
-            {
-                $scope.hideFromContactList.push(contact);
-                call(message.isInitiator, contact);
-                if (!message.isInitiator) {
-                    $timeout(function () {
-                        msg.emit('sendMessage', contact, {
-                            type: 'add_to_group',
-                            contacts: [$scope.currentUser],
-                            isInitiator: true
-                        });
-                    }, 1500);
+        }else{
+            if(message.type == "ignore"){
+                var len = Object.keys($scope.sessions).length;
+                if (len > 0) {
+                    if ($scope.sessions[name]) {
+                        $scope.sessions[name].close();
+                        delete $scope.sessions[name];
+                        console.log("OnIgnore: Session named: "+name+" closed and deleted");
+                    }
+                    if (Object.keys($scope.sessions).length === 0) {
+                        console.log("Not having any more sessions, should leave call");
+                        $timeout(function(){
+                            $scope.callEnded("Пользователь отклонил звонок");
+                        },0);
+                    }
+                } else {
+                    console.log("Ignore recieved from "+name+" but all sessions empty");
+                    $timeout(function(){
+                        $scope.callEnded("Пользователь отклонил звонок");
+                    },0);
                 }
-            });
+            }else{
+                if(message.type == "phonertc_handshake"){
+                    if (duplicateMessages.indexOf(message.data) === -1) {
+                        if($scope.sessions[name]){
+                            $scope.sessions[name].receiveMessage(JSON.parse(message.data));
+                            duplicateMessages.push(message.data);
+                        }else{
+                            console.log("HShake recieved from "+name+" There no one session with this name");
+                        }
+                    }
+                }else{
+                   if(message.type == "add_to_group"){
+                       console.log("GroupInviteRecieved from "+ name);
+                       message.contacts.forEach(function (contact) {
+                           if($scope.sessions[contact]){
+                               console.log("Already have session with name "+ contact+ " : ONGroupCallStatement");
+                           }else{
+                               call(message.isInitiator, contact);
+                               console.log("Call to "+contact+ "groupCall");
+                               if (!message.isInitiator) {
+                                   $timeout(function () {
+                                       msg.emit('sendMessage', contact, {
+                                           type: 'add_to_group',
+                                           contacts: [$scope.currentName],
+                                           isInitiator: true
+                                       });
+                                   }, 1500);
+                               }
+                           }
+
+                       });
+                   }else{
+                       if(message.type == "busy"){
+                           console.log("I tried to call user "+name+ "but he is busy now, close session");
+                           $scope.contactIsBusy(name);
+                       }else{
+                           console.log("Unknown TYPE: ",message.type);
+                       }
+                   }
+                }
+            }
         }
 
     }
-
     io.socket.on('messageReceived', onMessageReceive);
-
     $scope.$on('$destroy', function() {
+        console.log("Destroy started: leaving from socket room");
+        music.stopAll();
+        music.play("call_ended",false);
         io.socket.off('messageReceived', onMessageReceive);
     });
 });
@@ -1539,26 +1568,5 @@ clicklife.controller("PageCtrl", function($scope, $location){
 });
 clicklife.controller("CashCtrl", function($scope, $location){
 
-});y
-clicklife.controller("ProfileCtrl", function($scope, $location){});
-clicklife.directive('videoView', function ($rootScope, $timeout) {
-    return {
-        restrict: 'E',
-        template: '<div class="video-container"></div>',
-        replace: true,
-        link: function (scope, element, attrs) {
-            function updatePosition() {
-                cordova.plugins.phonertc.setVideoView({
-                    container: element[0],
-                    local: {
-                        position: [0, 0],
-                        size: [0, 0]
-                    }
-                });
-            }
-
-            $timeout(updatePosition, 500);
-            $rootScope.$on('videoView.updatePosition', updatePosition);
-        }
-    }
 });
+clicklife.controller("ProfileCtrl", function($scope, $location){});

@@ -162,6 +162,7 @@ clicklife.config(function($routeProvider){
  */
 clicklife.run(function($rootScope,$location, callService) {
     $rootScope.$on("$routeChangeSuccess",function(event, current, prev){
+        callService.currentRoute = current.templateUrl;
         if (
             current.templateUrl == "templates/login.html" ||
             current.templateUrl == "templates/confirm_success.html" ||
@@ -230,15 +231,12 @@ clicklife.run(function($rootScope, $interval,$timeout, msg, music,$location,Auth
 clicklife.run(function( msg, callService,$timeout){
     msg.on("messageReceived", function(data){
         if(data.message.type == 'call'){
-            if(!callService.nowOnCall){
+            if(callService.currentRoute == "templates/call.html"){
+                console.log("Incoming call requested, but i`m already in call... Ignoring");
+            }else{
                 $timeout(function(){
-                    callService.nowOnCall = true;
                     window.location.href = "#call/"+data.from+"/0";
                 },0);
-            }else{
-                //i`m busy now
-                console.log("Incoming call requested, but i`m already in call... Ignoring");
-                msg.emit('sendMessage', data.from, { type: 'busy' });
             }
         }
 
@@ -290,7 +288,6 @@ clicklife.factory("Auth", function($interval, $location){
 
     };
     return{
-
         watchMe: function($scope){
             $scope.$watch(Auth.isLoggedIn, function (value, oldValue) {
                 if(!value && oldValue) {
@@ -368,7 +365,7 @@ clicklife.factory("msg", function(Auth){
 });
 /*** call service ***/
 clicklife.service("callService", function(User){
-    var that = this;
+   var that = this;
    this.initCall = function(username){
        window.location.href="#call/"+username+"/1";
    } ;
@@ -389,6 +386,7 @@ clicklife.service("callService", function(User){
         that.initCall(user.username);
     };
 
+    this.currentRoute = "";
 });
 /***
  * Video Service
@@ -1299,9 +1297,11 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         msg.emit('sendMessage', $routeParams.contactName, { type: 'call' });
         music.setStreamType("ring");
         music.play("outcoming_call",true, 500);
+
     }else{
         if(!$scope.callInProgress){
             // incoming call
+            console.log("looks like its incoming call)))");
             music.setStreamType("ring");
             music.play("incoming_call",true, 500);
         }
@@ -1316,6 +1316,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
            music.stop("outcoming_call");
            music.setStreamType("ring");
            music.play("call_busy",0);
+            callService.nowOnCall = false;
           $location.path("/contacts");
        }
     };
@@ -1327,16 +1328,15 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         music.setStreamType("ring");
         music.play("call_busy",0);
         $location.path("/contacts");
-    };
+    }
 
     $scope.callAnswered = function(){
-       $scope.callInProgress = true;
-       music.stop("incoming_call");
-        music.stop("outcomin_call");
-       $scope.timer.start();
+        $scope.timer.start();
     };
     // to answer INCOMING call
     $scope.answer = function () {
+        music.stop("incoming_call");
+        music.stop("outcoming_call");
         if ($scope.callInProgress) {
             console.log("You cannot answer, call is in progress now");
             return;
@@ -1349,28 +1349,25 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
             msg.emit('sendMessage', $routeParams.contactName, { type: 'answer' });
         }, 1500);
     };
-
     $scope.ignore = function () {
         var contactNames = Object.keys($scope.sessions);
         if(contactNames.length > 0) {
             $scope.sessions[contactNames[0]].disconnect();
             console.log("I have "+contactNames.length+" sessions. rejecting "+contactNames[0]+" ... : call session.disconnect();");
         } else {
+            music.stopAll();
             msg.emit('sendMessage', $routeParams.contactName, { type: 'ignore' });
             console.log($routeParams.contactName+" called, but i was rejected, leaving call state");
             $location.path("/contacts");
         }
     };
-
-    $scope.end = function () {
+    $scope.endCall = function () {
         Object.keys($scope.sessions).forEach(function (contact) {
             $scope.sessions[contact].close();
             delete $scope.sessions[contact];
             console.log("I have some sessions. Rejecting "+contact+" ... : call session.close();");
         });
     };
-
-
 
     function call(isInitiator, contactName) {
         console.log(new Date().toString() + ': calling to ' + contactName + ', isInitiator: ' + isInitiator);
@@ -1405,7 +1402,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         });
 
         session.on('answer', function () {
-            console.log('Answered!');
+
         });
 
         session.on('disconnect', function () {
@@ -1426,9 +1423,10 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         //console.log("Recieved_locally",data);
         var name = data.from;
         var message = data.message;
-
         if(message.type == "answer"){
             $scope.$apply(function () {
+                music.stop("incoming_call");
+                music.stop("outcoming_call");
                 $scope.callInProgress = true;
                 $scope.callAnswered();
             });
@@ -1460,12 +1458,15 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
                     }
                     if (Object.keys($scope.sessions).length === 0) {
                         console.log("Not having any more sessions, should leave call");
-                        $scope.callEnded("Пользователь отклонил звонок");
+                        $timeout(function(){
+                            $scope.callEnded("Пользователь отклонил звонок");
+                        },0);
                     }
                 } else {
-
                     console.log("Ignore recieved from "+name+" but all sessions empty");
-                    $scope.callEnded("Пользователь отклонил звонок");
+                    $timeout(function(){
+                        $scope.callEnded("Пользователь отклонил звонок");
+                    },0);
                 }
             }else{
                 if(message.type == "phonertc_handshake"){
@@ -1514,6 +1515,8 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
     io.socket.on('messageReceived', onMessageReceive);
     $scope.$on('$destroy', function() {
         console.log("Destroy started: leaving from socket room");
+        music.stopAll();
+        music.play("call_ended",false);
         io.socket.off('messageReceived', onMessageReceive);
     });
 });

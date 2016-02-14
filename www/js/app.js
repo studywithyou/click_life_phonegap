@@ -766,7 +766,12 @@ clicklife.controller("ConfirmCtrl", function($scope, $location, Auth){
 /****************************************************************************
  Contacts
  *********/
-clicklife.controller("ContactsCtrl", function($scope,$routeParams,music, Auth, $location, callService){
+clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout, Auth, $location, callService){
+    $scope.$on('ngRepeatFinished', function(ngRepeatFinishedEvent) {
+        $timeout(function(){
+            $('.dropdown-button').dropdown();
+        },false,100);
+    });
     $('ul.tabs').tabs();
     var w = $( window ).width() * 0.80;
     if(w > 500){
@@ -777,22 +782,15 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music, Auth, $
         closeOnClick: true
     });
     $('.modal-trigger').leanModal();
-    $('.dropdown-button').dropdown({
-            inDuration: 300,
-            outDuration: 225,
-            constrain_width: false, // Does not change width of dropdown to that of the activator
-            hover: true, // Activate on hover
-            gutter: 0, // Spacing from edge
-            belowOrigin: false, // Displays dropdown below the button
-            alignment: 'left' // Displays dropdown with edge aligned to the left of button
-        });
     $scope.contacts  = [];
     $scope.groups = [];
     $scope.online_users = [];
     $scope.requestNumber = "";
     $scope.search = [];
     $scope.search_string = "";
-    $scope.isGroups = ($routeParams.isGroups && $routeParams.isGroups == '1')? true: false;
+    if($routeParams.isGroups && $routeParams.isGroups == '1'){
+        $('ul.tabs').tabs('select_tab', 'groups');
+    }
     //controller init
     io.socket.get("/contacts/get_by_user",{user: Auth.getUser().id}, function(data){
         $scope.$apply(function(){
@@ -802,8 +800,8 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music, Auth, $
     });
     io.socket.get("/contacts/get_groups_by_user",{user: Auth.getUser().id}, function(gData){
         $scope.$apply(function(){
-            console.log(data, "Groups initialized");
             $scope.groups = gData;
+
         });
     });
     io.socket.on("user", function contactUpdateEvent(msg){
@@ -899,10 +897,15 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music, Auth, $
     //add from search
     $scope.addFromSearch = function(user){
         $scope.search = [];
+        var checked = true;
         for(var i in $scope.contacts){
             if($scope.contacts[i].contact.id == user.id){
-                return alert("Контакт уже у Вас в списке");
+                checked = false;
             }
+        }
+        if(!checked){
+             Materialize.toast("Контакт уже есть в Вашем списке",1000);
+             return false;
         }
         io.socket.get("/contacts/add_contact",{
             email: user.email,
@@ -917,20 +920,22 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music, Auth, $
                 $scope.requestNumber = data.phone;
                 $scope.$apply();
                 return jQuery('#modal1').openModal();
+            }else{
+                Materialize.toast("Контакт добавлен",1000);
+                $scope.$apply(function(){
+                    if(data.created.contact.is_online == '1'){
+                        music.setStreamType("ring");
+                        music.play("contact_added");
+                        // window.plugin.notification.local.add({ text: 'Пользователь появился в сети', title:data.created.contact.fio + "))"  });
+                    }else{
+                        // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:data.created.contact.fio+ "(("  });
+                        music.setStreamType("ring");
+                        music.play("logoff");
+                    }
+                    $scope.contacts.push(data.created);
+
+                });
             }
-            Materialize.toast("Контакт добавлен",1000);
-            $scope.$apply(function(){
-                if(data.created.contact.is_online == '1'){
-                    music.setStreamType("ring");
-                    music.play("contact_added");
-                    // window.plugin.notification.local.add({ text: 'Пользователь появился в сети', title:data.created.contact.fio + "))"  });
-                }else{
-                    // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:data.created.contact.fio+ "(("  });
-                    music.setStreamType("ring");
-                    music.play("logoff");
-                }
-                $scope.contacts.push(data.created);
-            });
         });
     };
 
@@ -1567,3 +1572,18 @@ clicklife.controller("CashCtrl", function($scope, $location){
 
 });
 clicklife.controller("ProfileCtrl", function($scope, $location){});
+
+
+// directives
+clicklife.directive('onFinishRender', function ($timeout) {
+    return {
+        restrict: 'A',
+        link: function (scope, element, attr) {
+            if (scope.$last === true) {
+                $timeout(function () {
+                    scope.$emit('ngRepeatFinished');
+                });
+            }
+        }
+    }
+});

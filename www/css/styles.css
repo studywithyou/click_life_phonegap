@@ -1461,3 +1461,7 @@ audio {
     width: 220px!important;
 }
 
+
+#all_contacts .collection {
+    overflow: visible;
+}

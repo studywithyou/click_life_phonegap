@@ -93,8 +93,8 @@
     <div class="col s12">
         <ul class="tabs yellow darken-2">
             <li class="tab col s4"><a href="#online">Онлайн</a></li>
-            <li class="tab col s4"><a ng-class="{true:'', false:'active'}[isGroups]" href="#all_contacts">Все контакты</a></li>
-            <li class="tab col s4"><a ng-class="{true:'active', false:''}[isGroups]" href="#groups">Группы</a></li>
+            <li class="tab col s4"><a class="active" href="#all_contacts">Все контакты</a></li>
+            <li class="tab col s4"><a  href="#groups">Группы</a></li>
         </ul>
     </div>
 </div>
@@ -110,11 +110,24 @@
 </div>
 <div id="all_contacts" class="col s12">
     <ul class="collection">
-        <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.contact.is_online == 1]" ng-repeat="user in contacts" >
+        <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.contact.is_online == 1]"
+             ng-repeat="user in contacts"
+             on-finish-render="ngRepeatFinished">
             <img ng-src="{{user.contact.avatar}}" alt="" class="circle" ng-click="chatWith(user)">
             <span class="title" ng-click="chatWith(user)">{{user.contact.fio}}</span>
-            <p ng-click="chatWith(user)">{{user.contact.username}}</p>
-            <a ng-click="editUserGroup(user)" class="secondary-content group">{{user.group.name}}</a>
+            <p ng-click="chatWith(user)">
+                {{user.contact.username}}
+                <span  ng-if="user.group" class="contactgroup">{{user.group.name}}</span>
+            </p>
+            <a  class="secondary-content dropdown-button" data-activates='dropdown_{{user.id}}'>
+                <i class="material-icons">more_vert</i>
+            </a>
+            <ul id='dropdown_{{user.id}}' class='dropdown-content'>
+                <li><a href="#!">one</a></li>
+                <li><a href="#!">two</a></li>
+                <li class="divider"></li>
+                <li><a href="#!">three</a></li>
+            </ul>
         </li>
     </ul>
     <div class="center">

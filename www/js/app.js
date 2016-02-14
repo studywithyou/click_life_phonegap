@@ -1472,7 +1472,7 @@ clicklife.controller("PageCtrl", function($scope, $location){
 });
 clicklife.controller("CashCtrl", function($scope, $location){
 
-});y
+});
 clicklife.controller("ProfileCtrl", function($scope, $location){});
 clicklife.directive('videoView', function ($rootScope, $timeout) {
     return {

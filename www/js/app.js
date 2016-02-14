@@ -1253,21 +1253,14 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
 /*** call ***/
 clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,$timeout, $routeParams, music, callService, msg,Auth){
     callService.nowOnCall = true;
-   /** cordova.plugins.phonertc.setVideoView({
-        container: document.getElementById('videoContainer'),
-        local: {
-            position: [1, 1],
-            size: [1, 1],
-            containerParams: {
-                position: [1, 1],
-                size: [1, 1],
-            }
-        },
-        containerParams: {
-            position: [1, 1],
-            size: [1, 1],
-        }
-    });**/
+   cordova.plugins.phonertc.setVideoView({
+       containerParams:{
+           size:[10,10],
+           position:[10,10]
+       },
+       local: false,
+
+    });
     var duplicateMessages = [];
     $scope.isCalling = ($routeParams.isCalling == '1') ? true: false;
     $scope.callInProgress = false;

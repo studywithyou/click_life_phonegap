@@ -1373,6 +1373,33 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         });
     };
 
+    /*** go to dialog ***/
+    // if call in progress ends call, else send ignore key
+    $scope.goToDialog = function(){
+        //location.href="#chat/"+user.contact.id;
+        Materialize.toast("Подождите...",560);
+        io.socket.get("/dialog/join",{ user: $scope.contactData.id}, function(data){
+            //console.log(data);
+            if($scope.callInProgress){
+                Object.keys($scope.sessions).forEach(function (contact) {
+                    $scope.sessions[contact].close();
+                    delete $scope.sessions[contact];
+                    console.log("I have some sessions. Rejecting "+contact+" ... : call session.close();");
+                });
+            }else{
+                var contactNames = Object.keys($scope.sessions);
+                if(contactNames.length > 0) {
+                    $scope.sessions[contactNames[0]].disconnect();
+                    console.log("I have "+contactNames.length+" sessions. rejecting "+contactNames[0]+" ... : call session.disconnect();");
+                } else {
+                    msg.emit('sendMessage', $routeParams.contactName, { type: 'ignore' });
+                    console.log($routeParams.contactName+" called, but i was rejected, leaving call state");
+                }
+            }
+            music.stopAll();
+            location.href="#dialog/"+data.dialog;
+        });
+    };
     function call(isInitiator, contactName) {
         console.log(new Date().toString() + ': calling to ' + contactName + ', isInitiator: ' + isInitiator);
 

@@ -519,9 +519,9 @@ clicklife.service("music", function(){
     };
 
     /*** togle mute microphone
-     * @param muted string "on" || "off"
+     * @param muted bool
      * ***/
-    this.toggleMicrophone = function(muted){
+    this.muteMicrophone = function(muted){
         try{
             Media.mute_microphone(muted);
         } catch(e){console.log(e)};
@@ -531,10 +531,6 @@ clicklife.service("music", function(){
      * @param bool state - true = speaker is on, false = speaker is off
      * ****/
     this.toggleSpeaker = function(state){
-        try{
-            return Media.toggle_speaker(state);
-        }catch(e){ console.log(e);}
-
     };
 
     //play sound
@@ -1269,11 +1265,11 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
     $scope.mic_muted = false;
     $scope.toggleMic = function(){
         if($scope.mic_muted){
-            music.toggleMicrophone("off");
+            music.muteMicrophone(false);
             $scope.mic_muted = false;
         }else{
             $scope.mic_muted = true;
-            music.toggleMicrophone("on");
+            music.muteMicrophone(true);
         }
     };
     $scope.toggleMute = function () {

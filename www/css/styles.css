@@ -1465,6 +1465,12 @@ audio {
 #all_contacts .collection {
     overflow: visible;
 }
+#online .collection {
+    overflow: visible;
+}
+#groups .collection {
+    overflow: visible;
+}
 
 
 .dropdown-content.usermenu  a {

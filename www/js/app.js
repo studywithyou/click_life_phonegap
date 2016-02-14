@@ -1253,7 +1253,7 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
 /*** call ***/
 clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,$timeout, $routeParams, music, callService, msg,Auth){
     callService.nowOnCall = true;
-    cordova.plugins.phonertc.setVideoView({
+   /** cordova.plugins.phonertc.setVideoView({
         container: document.getElementById('videoContainer'),
         local: {
             position: [1, 1],
@@ -1267,7 +1267,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
             position: [1, 1],
             size: [1, 1],
         }
-    });
+    });**/
     var duplicateMessages = [];
     $scope.isCalling = ($routeParams.isCalling == '1') ? true: false;
     $scope.callInProgress = false;
@@ -1363,7 +1363,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         call(false, $routeParams.contactName);
         $scope.callAnswered();
         setTimeout(function () {
-            cordova.plugins.phonertc.hideVideoView();
+            //cordova.plugins.phonertc.hideVideoView();
             console.log('Incoming session ACCEPTED sending answer');
             msg.emit('sendMessage', $routeParams.contactName, { type: 'answer' });
         }, 1500);
@@ -1448,7 +1448,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         });
 
         session.on('answer', function () {
-            cordova.plugins.phonertc.hideVideoView();
+            //cordova.plugins.phonertc.hideVideoView();
         });
 
         session.on('disconnect', function () {

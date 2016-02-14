@@ -99,14 +99,52 @@
     </div>
 </div>
 <div id="online" class="col s12">
-    <ul class="collection">
-        <li  ng-class="{true:'online collection-item avatar', false:'hide collection-item avatar'}[user.contact.is_online == 1]" ng-repeat="user in contacts" >
-            <img ng-src="{{user.contact.avatar}}" alt="" class="circle" ng-click="chatWith(user)">
-            <span class="title" ng-click="chatWith(user)">{{user.contact.fio}}</span>
-            <p ng-click="chatWith(user)">{{user.contact.username}}</p>
-            <a ng-click="editUserGroup(user)" class="secondary-content group">{{user.group.name}}</a>
-        </li>
-    </ul>
+    <li ng-if="user.contact.is_online == 1" ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.contact.is_online == 1]"
+         ng-repeat="user in contacts"
+         on-finish-render="ngRepeatFinished">
+        <img ng-src="{{user.contact.avatar}}" alt="" class="circle" ng-click="chatWith(user)">
+        <span class="title" >{{user.contact.fio}}</span>
+        <p >
+            {{user.contact.username}}
+                <span  ng-if="user.group" class="contactgroup">
+                    <i class="material-icons tiny">{{user.group.icon}}</i>{{user.group.name}}
+                </span>
+        </p>
+        <a  class="secondary-content dropdown-button" data-activates='dropdown_online_{{user.id}}'>
+            <i class="material-icons">more_vert</i>
+        </a>
+        <ul id='dropdown_online_{{user.id}}' class='dropdown-content usermenu'>
+            <li>
+                <a ng-click="chatWith(user)" >
+                    <i class="material-icons small">chat</i>
+                </a>
+            </li>
+            <li class="divider"></li>
+            <li  >
+                <a ng-click="callToUser(user)">
+                    <i class="material-icons small">call</i>
+                </a>
+            </li>
+            <li class="divider" ></li>
+            <li>
+                <a ng-click="renameUser(user)">
+                    <i class="material-icons small">create</i>
+                </a>
+            </li>
+            <li class="divider"></li>
+            <li>
+                <a ng-click="editUserGroup(user)">
+                    <i class="material-icons small">group</i>
+                </a>
+            </li>
+            <li class="divider"></li>
+            <li>
+                <a ng-click="removeContact(user)">
+                    <i class="material-icons small">delete</i>
+                </a>
+            </li>
+        </ul>
+    </li>
 </div>
 <div id="all_contacts" class="col s12">
     <ul class="collection">
@@ -114,19 +152,46 @@
              ng-repeat="user in contacts"
              on-finish-render="ngRepeatFinished">
             <img ng-src="{{user.contact.avatar}}" alt="" class="circle" ng-click="chatWith(user)">
-            <span class="title" ng-click="chatWith(user)">{{user.contact.fio}}</span>
-            <p ng-click="chatWith(user)">
+            <span class="title" >{{user.contact.fio}}</span>
+            <p >
                 {{user.contact.username}}
-                <span  ng-if="user.group" class="contactgroup">{{user.group.name}}</span>
+                <span  ng-if="user.group" class="contactgroup">
+                    <i class="material-icons tiny">{{user.group.icon}}</i>{{user.group.name}}
+                </span>
             </p>
             <a  class="secondary-content dropdown-button" data-activates='dropdown_{{user.id}}'>
                 <i class="material-icons">more_vert</i>
             </a>
-            <ul id='dropdown_{{user.id}}' class='dropdown-content'>
-                <li><a href="#!">one</a></li>
-                <li><a href="#!">two</a></li>
+            <ul id='dropdown_{{user.id}}' class='dropdown-content usermenu'>
+                <li>
+                    <a ng-click="chatWith(user)" >
+                        <i class="material-icons small">chat</i>
+                    </a>
+                </li>
                 <li class="divider"></li>
-                <li><a href="#!">three</a></li>
+                <li ng-if="user.contact.is_online == 1" >
+                    <a ng-click="callToUser(user)">
+                        <i class="material-icons small">call</i>
+                    </a>
+                </li>
+                <li class="divider" ng-if="user.contact.is_online == 1"></li>
+                <li>
+                    <a ng-click="renameUser(user)">
+                        <i class="material-icons small">create</i>
+                    </a>
+                </li>
+                <li class="divider"></li>
+                <li>
+                    <a ng-click="editUserGroup(user)">
+                        <i class="material-icons small">group</i>
+                    </a>
+                </li>
+                <li class="divider"></li>
+                <li>
+                    <a ng-click="removeContact(user)">
+                        <i class="material-icons small">delete</i>
+                    </a>
+                </li>
             </ul>
         </li>
     </ul>

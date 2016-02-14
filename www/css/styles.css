@@ -1465,3 +1465,8 @@ audio {
 #all_contacts .collection {
     overflow: visible;
 }
+
+
+.dropdown-content.usermenu  a {
+    text-align: center!important;
+}

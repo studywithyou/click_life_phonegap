@@ -125,7 +125,7 @@ clicklife.config(function($routeProvider){
             templateUrl: 'templates/confirm_success.html',
             controller:'ConfirmCtrl'
         }).
-        when("/contacts",{
+        when("/contacts/:isGroups?",{
             templateUrl:'templates/contacts.html',
             controller:'ContactsCtrl'
         }).
@@ -610,6 +610,7 @@ clicklife.service("giftsService", function(){
     };
 });
 
+
 /**********************************************************************************************************************
  * CONTROLLERS
  **********************************************************************************************************************/
@@ -765,7 +766,7 @@ clicklife.controller("ConfirmCtrl", function($scope, $location, Auth){
 /****************************************************************************
  Contacts
  *********/
-clicklife.controller("ContactsCtrl", function($scope,music, Auth, $location){
+clicklife.controller("ContactsCtrl", function($scope,$routeParams,music, Auth, $location, callService){
     $('ul.tabs').tabs();
     var w = $( window ).width() * 0.80;
     if(w > 500){
@@ -784,53 +785,49 @@ clicklife.controller("ContactsCtrl", function($scope,music, Auth, $location){
             gutter: 0, // Spacing from edge
             belowOrigin: false, // Displays dropdown below the button
             alignment: 'left' // Displays dropdown with edge aligned to the left of button
-        }
-    );
+        });
     $scope.contacts  = [];
     $scope.groups = [];
     $scope.online_users = [];
     $scope.requestNumber = "";
     $scope.search = [];
     $scope.search_string = "";
+    $scope.isGroups = ($routeParams.isGroups && $routeParams.isGroups == '1')? true: false;
     //controller init
-    $scope.initController = function(){
-        $scope.initContacts();
-    };
-    // инициализация контактов
-    $scope.initContacts = function(){
-        io.socket.get("/contacts/get_by_user",{user: Auth.getUser().id}, function(data){
-            io.socket.get("/contacts/get_groups_by_user",{user: Auth.getUser().id}, function(gData){
-                $scope.$apply(function(){
-                    console.log(data, "Contacts initialized");
-                    $scope.contacts = data;
-                    $scope.groups = gData;
-                });
-            });
+    io.socket.get("/contacts/get_by_user",{user: Auth.getUser().id}, function(data){
+        $scope.$apply(function(){
+            console.log(data, "Contacts initialized");
+            $scope.contacts = data;
         });
-        // on contact update
-        io.socket.on("user", function contactUpdateEvent(msg){
-            console.log("userEvent", msg, $scope.contacts);
-            angular.forEach($scope.contacts, function(row, k){
-                if(row.contact.id == msg.data.id){
-                    var upd = false;
-                    if(msg.data.is_online != $scope.contacts[k].contact.is_online){
-                        if(msg.data.is_online == '1'){
-                            music.setStreamType("ring");
-                            music.play("contact_added");
-                            // window.plugin.notification.local.add({ text: 'Пользователь появился в сети', title:msg.data.fio + "))"  });
-                        }else{
-                            music.setStreamType("ring");
-                            music.play("logoff");
-                            // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:msg.data.fio+ "(("  });
-                        }
+    });
+    io.socket.get("/contacts/get_groups_by_user",{user: Auth.getUser().id}, function(gData){
+        $scope.$apply(function(){
+            console.log(data, "Groups initialized");
+            $scope.groups = gData;
+        });
+    });
+    io.socket.on("user", function contactUpdateEvent(msg){
+        console.log("userEvent", msg, $scope.contacts);
+        angular.forEach($scope.contacts, function(row, k){
+            if(row.contact.id == msg.data.id){
+                var upd = false;
+                if(msg.data.is_online != $scope.contacts[k].contact.is_online){
+                    if(msg.data.is_online == '1'){
+                        music.setStreamType("ring");
+                        music.play("contact_added");
+                        // window.plugin.notification.local.add({ text: 'Пользователь появился в сети', title:msg.data.fio + "))"  });
+                    }else{
+                        music.setStreamType("ring");
+                        music.play("logoff");
+                        // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:msg.data.fio+ "(("  });
                     }
-                    $scope.contacts[k].contact = msg.data;
-                    $scope.$apply();
                 }
-            });
+                $scope.contacts[k].contact = msg.data;
+                $scope.$apply();
+            }
         });
+    });
 
-    };
     //создание контакта
     $scope.addContact = function(){
         window.plugins.PickContact.chooseContact(function (contactInfo) {

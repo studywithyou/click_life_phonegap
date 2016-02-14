@@ -23,7 +23,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#contacts">
+                    <a href="#contacts/1">
                         <i class="material-icons">group_work</i>
                         Групы
                         <span class="badge">{{groups.length}}</span>
@@ -93,8 +93,8 @@
     <div class="col s12">
         <ul class="tabs yellow darken-2">
             <li class="tab col s4"><a href="#online">Онлайн</a></li>
-            <li class="tab col s4"><a class="active" href="#all_contacts">Все контакты</a></li>
-            <li class="tab col s4"><a href="#groups">Группы</a></li>
+            <li class="tab col s4"><a ng-class="{true:'', false:'active'}[isGroups]" href="#all_contacts">Все контакты</a></li>
+            <li class="tab col s4"><a ng-class="{true:'active', false:''}[isGroups]" href="#groups">Группы</a></li>
         </ul>
     </div>
 </div>

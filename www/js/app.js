@@ -888,12 +888,12 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                 }
                 for(var k in $scope.contacts){
                     if($scope.contacts[k].contact.id == results[i].id){
-                        results[i].is_added = true;
-                    }else{
-                        results[i].is_added = false;
+                        results[i] = false;
                     }
                 }
-                r.push(results[i]);
+                if(results[i]){
+                    r.push(results[i]);
+                }
             }
             if(!results){
                 return Materialize.toast("Ничего не найдено!",1000);

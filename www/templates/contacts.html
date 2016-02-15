@@ -76,20 +76,15 @@
                     <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.is_online == 1]" ng-repeat="user in search" >
                         <img ng-src="{{user.avatar}}" alt="" class="circle">
                         <span class="title">{{user.fio}}</span>
-
-                        <a  ng-if="user.is_added == true" ng-click="chatWith(user)" class="secondary-content" >
-                            <i class="material-icons">chat</i>
-                        </a>
-                        <a  ng-if="user.is_added == false" ng-click="addFromSearch(user, $index)" class="secondary-content" >
-                            <i class="material-icons">chat</i>
+                        <a   ng-click="addFromSearch(user, $index)" class="secondary-content" >
+                            <i class="material-icons">add</i>
                         </a>
                     </li>
                 </ul>
             </div>
         </div>
         <a href="#" data-activates="slide-out" class="button-collapse"><i class="icon-menu"></i></a>
-        <a href="#" class="search_btn right button-collapse" data-activates="slide-search"><i
-                class="icon-search"></i></a>
+        <a href="#" class="search_btn right button-collapse" data-activates="slide-search"><i class="icon-search"></i></a>
     </div>
 </nav>
 <div class="row yellow darken-2 tbs">

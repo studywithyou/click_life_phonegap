@@ -182,6 +182,7 @@ clicklife.run(function($rootScope,$location, callService) {
 
 clicklife.run(function($rootScope, $location, Auth){
     $rootScope.$on('$routeChangeStart', function (event) {
+        $(".drag-target").remove();
         if (!Auth.isLoggedIn()) {
             console.log('DENY');
             event.preventDefault();
@@ -903,8 +904,8 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
         });
     };
     //add from search
-    $scope.addFromSearch = function(user, $index){
-        $scope.search.splice(index, 1);
+    $scope.addFromSearch = function(user, index){
+        $scope.search = [];
         var checked = true;
         for(var i in $scope.contacts){
             if($scope.contacts[i].contact.id == user.id){
@@ -915,6 +916,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
              Materialize.toast("Контакт уже есть в Вашем списке",1000);
              return false;
         }
+
         io.socket.get("/contacts/add_contact_by_id",{
             email: user.email,
             phone: user.username,

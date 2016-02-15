@@ -63,12 +63,12 @@
                 <div class="title">Click Life</div>
                 <div class="subtitle">поиск контактов</div>
             </div>
-            <div class="col  center" >
+            <div class="col  center"  ng-show="!search.length">
                 <div class="input-field">
                     <input type="search" style="padding-left: 30px;" ng-model="search_string" placeholder="Введите номер или имя"/>
                 </div>
             </div>
-            <div class="center">
+            <div class="center" ng-show="!search.length">
                 <button class="waves-effect waves-light btn" ng-click="search_users()">Найти</button>
             </div>
             <div class="center">
@@ -76,7 +76,7 @@
                     <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.is_online == 1]" ng-repeat="user in search" >
                         <img ng-src="{{user.avatar}}" alt="" class="circle">
                         <span class="title">{{user.fio}}</span>
-                        <a   ng-click="addFromSearch(user, $index)" class="secondary-content" >
+                        <a class="btn-floating btn-small waves-effect waves-light red" ng-click="addFromSearch(user, $index)">
                             <i class="material-icons">add</i>
                         </a>
                     </li>

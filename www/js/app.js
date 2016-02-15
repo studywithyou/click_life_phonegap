@@ -889,8 +889,8 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
         });
     };
     //add from search
-    $scope.addFromSearch = function(user){
-        $scope.search = [];
+    $scope.addFromSearch = function(user, $index){
+        $scope.search.splice(index, 1);
         var checked = true;
         for(var i in $scope.contacts){
             if($scope.contacts[i].contact.id == user.id){
@@ -901,7 +901,7 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
              Materialize.toast("Контакт уже есть в Вашем списке",1000);
              return false;
         }
-        io.socket.get("/contacts/add_contact",{
+        io.socket.get("/contacts/add_contact_by_id",{
             email: user.email,
             phone: user.username,
             user: Auth.getUser().id
@@ -1022,25 +1022,28 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
             function(answer){
                 if(answer == '1'){
                     //delete
-                    $scope.contacts.splice(index, 1);
-                    io.socket.get("/contacts/delete_contact",{contact: user.id}, function(){});
-                }else{
-                    //nothing
+                    io.socket.get("/contacts/delete_contact",{contact: user.id}, function(){
+                        $scope.$apply(function(){
+                            $scope.contacts.splice(index, 1);
+                        });
+                    });
                 }
             },
             'Подтвердите удаление',           // title
             ['Да','Нет']     // buttonLabels
         );
     };
-    $scope.chatWithGroup = function(group){}
     $scope.removeGroup = function(group, index){
         navigator.notification.confirm(
             'Удалить  группу '+group.name+"  из списка групп ?", // message
             function(answer){
                 if(answer == '1'){
                     //delete
-                    $scope.groups.splice(index, 1);
-                    io.socket.get("/contacts/delete_group",{group: group.id}, function(){});
+                    io.socket.get("/contacts/delete_group",{group: group.id}, function(){
+                        $scope.$apply(function(){
+                            $scope.groups.splice(index, 1);
+                        });
+                    });
                 }
             },
             'Подтвердите удаление',           // title

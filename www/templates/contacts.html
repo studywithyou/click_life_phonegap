@@ -76,7 +76,7 @@
                     <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.is_online == 1]" ng-repeat="user in search" >
                         <img ng-src="{{user.avatar}}" alt="" class="circle">
                         <span class="title">{{user.fio}}</span>
-                        <a ng-if="user.is_added == false" class="btn-floating btn-small waves-effect waves-light red" ng-click="addFromSearch(user)">
+                        <a ng-if="user.is_added == false" class="btn-floating btn-small waves-effect waves-light red" ng-click="addFromSearch(user, $index)">
                             <i class="material-icons">add</i>
                         </a>
                         <a  ng-if="user.is_added == true" ng-click="chatWith(user)" class="secondary-content dropdown-button" >

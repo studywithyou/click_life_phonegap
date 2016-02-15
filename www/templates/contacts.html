@@ -1,11 +1,10 @@
 <nav class="yellow darken-2 z-depth-0" ng-init="initController()">
     <div class="nav-wrapper">
-        <a href="#" class="center pagename">Контакты</a>
-
+        <a href="#contacts" class="center pagename">Контакты</a>
         <div id="slide-out" class="side-nav">
             <div class="head yellow darken-2">
                 <div class="title">Click Life</div>
-                <div class="subtitle">Какой то текст</div>
+                <div class="subtitle">{{me.fio}}</div>
             </div>
             <ul>
                 <li>
@@ -16,16 +15,16 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#!">
+                    <a href="#dialogs">
                         <i class="material-icons">chat</i>
                         Диалоги
-                        <span class="badge">0</span>
+                        <span class="badge">{{dialogsCount}}</span>
                     </a>
                 </li>
                 <li>
                     <a href="#contacts/1">
-                        <i class="material-icons">group_work</i>
-                        Групы
+                        <i class="material-icons">group</i>
+                        Группы
                         <span class="badge">{{groups.length}}</span>
                     </a>
                 </li>
@@ -33,7 +32,7 @@
                     <a href="#cash">
                         <i class="material-icons">credit_card</i>
                         Кошелек
-                        <span class="badge clever">0</span>
+                        <span class="badge clever">{{me.ballance}}</span>
                     </a>
                 </li>
                 <li>
@@ -62,7 +61,7 @@
         <div id="slide-search" class="side-nav">
             <div class="head yellow darken-2">
                 <div class="title">Click Life</div>
-                <div class="subtitle">поиск</div>
+                <div class="subtitle">поиск контактов</div>
             </div>
             <div class="col  center" >
                 <div class="input-field">
@@ -77,8 +76,11 @@
                     <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.is_online == 1]" ng-repeat="user in search" >
                         <img ng-src="{{user.avatar}}" alt="" class="circle">
                         <span class="title">{{user.fio}}</span>
-                        <a class="btn-floating btn-small waves-effect waves-light red" ng-click="addFromSearch(user)">
+                        <a ng-if="user.is_added == false" class="btn-floating btn-small waves-effect waves-light red" ng-click="addFromSearch(user)">
                             <i class="material-icons">add</i>
+                        </a>
+                        <a  ng-if="user.is_added == true" ng-click="chatWith(user)" class="secondary-content dropdown-button" >
+                            <i class="material-icons">chat</i>
                         </a>
                     </li>
                 </ul>
@@ -105,20 +107,16 @@
             ng-repeat="user in contacts"
             on-finish-render="ngRepeatFinished">
             <img ng-src="{{user.contact.avatar}}" alt="" class="circle" ng-click="chatWith(user)">
-            <span ng-if="user.group" class="usergroupicon"><i class="material-icons tiny">{{user.group.icon}}</i></span>
             <span class="title" >{{user.contact.fio}}</span>
-            <p >
+            <p>
                 {{user.contact.username}}
-                <span  ng-if="user.group" class="contactgroup">
-                   {{user.group.name}}
-                </span>
             </p>
             <a  class="secondary-content dropdown-button" data-activates='dropdown_online_{{user.id}}'>
                 <i class="material-icons">more_vert</i>
             </a>
             <ul id='dropdown_online_{{user.id}}' class='dropdown-content usermenu'>
                 <li>
-                    <a ng-click="chatWith(user)" >
+                    <a ng-click="chatWith(user.contact)" >
                         <i class="material-icons small">chat</i>
                     </a>
                 </li>
@@ -129,12 +127,7 @@
                     </a>
                 </li>
                 <li class="divider" ></li>
-                <li>
-                    <a ng-click="renameUser(user)">
-                        <i class="material-icons small">create</i>
-                    </a>
-                </li>
-                <li class="divider"></li>
+
                 <li>
                     <a ng-click="editUserGroup(user)">
                         <i class="material-icons small">group</i>
@@ -155,21 +148,17 @@
         <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.contact.is_online == 1]"
              ng-repeat="user in contacts"
              on-finish-render="ngRepeatFinished">
-            <img ng-src="{{user.contact.avatar}}" alt="" ng-click="chatWith(user)" class="circle" ng-click="chatWith(user)">
-            <span ng-if="user.group" class="usergroupicon"><i class="material-icons tiny">{{user.group.icon}}</i></span>
-            <span class="title" ng-click="chatWith(user)" >{{user.contact.fio}}</span>
-            <p >
+            <img ng-src="{{user.contact.avatar}}" alt="" ng-click="chatWith(user.contact)" class="circle" ng-click="chatWith(user)">
+            <span class="title" ng-click="chatWith(user.contact)" >{{user.contact.fio}}</span>
+            <p>
                 {{user.contact.username}}
-                <span  ng-if="user.group" class="contactgroupname">
-                    [ {{user.group.name}} ]
-                </span>
             </p>
             <a  class="secondary-content dropdown-button" data-activates='dropdown_{{user.id}}'>
                 <i class="material-icons">more_vert</i>
             </a>
             <ul id='dropdown_{{user.id}}' class='dropdown-content usermenu'>
                 <li>
-                    <a ng-click="chatWith(user)" >
+                    <a ng-click="chatWith(user.contact)" >
                         <i class="material-icons small">chat</i>
                     </a>
                 </li>
@@ -212,7 +201,7 @@
     </div>
     <div id="modal3" class="modal">
         <div class="modal-content">
-            <h4 style="color: #555555;">Редактирование группы пользователя</h4>
+            <h4 style="color: #555555;">Добавить пользователя в группу</h4>
             <div class="input-field col s12">
                 <select ng-model="userGroup" class="browser-default" ng-options="group.name for group in groups"></select>
             </div>
@@ -226,14 +215,38 @@
 </div>
 <div id="groups" class="col s12">
     <ul class="collection">
-        <li class="collection-item avatar" ng-repeat="group in groups">
+        <li class="collection-item avatar" ng-repeat="group in groups" on-finish-render="ngRepeatFinished">
             <i class="material-icons circle">{{group.icon}}</i>
-            <span class="title">{{group.name}}</span>
-            <p>{{group.description}}</p>
-            <a ng-click="editGroup(group)" class="secondary-content group">
-                <i class="material-icons">create</i>
+            <span class="title">{{group.name}} </span>
+            <p>{{group.description}} (<strong>{{group.users.length}}</strong> участников)</p>
+            <a  class="secondary-content dropdown-button" data-activates='dropdown_{{group.id}}'>
+                <i class="material-icons">more_vert</i>
             </a>
-
+            <ul id='dropdown_{{group.id}}' class='dropdown-content usermenu'>
+                <li>
+                    <a href="#groupchat/{{group.id}}">
+                        <i class="material-icons small">chat</i>
+                    </a>
+                </li>
+                <li class="divider"></li>
+                <li>
+                    <a href="#groups/{{group.id}}">
+                        <i class="material-icons small">folder_shared</i>
+                    </a>
+                </li>
+                <li class="divider"></li>
+                <li>
+                    <a ng-click="editGroup(group)">
+                        <i class="material-icons small">settings</i>
+                    </a>
+                </li>
+                <li class="divider"></li>
+                <li>
+                    <a ng-click="removeGroup(group, $index)">
+                        <i class="material-icons small">delete</i>
+                    </a>
+                </li>
+            </ul>
         </li>
     </ul>
     <div class="center">

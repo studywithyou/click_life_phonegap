@@ -71,7 +71,7 @@ jQuery(function($){
 
     $('ul.tabs').tabs();
     $(".button-collapse").sideNav({
-        menuWidth: 320,
+        menuWidth: 320
     });
     $('.modal-trigger').leanModal();
     $('.dropdown-button').dropdown({
@@ -161,7 +161,7 @@ clicklife.config(function($routeProvider){
  * initialization
  */
 clicklife.run(function($rootScope,$location, callService) {
-    $rootScope.$on("$routeChangeSuccess",function(event, current, prev){
+    $rootScope.$on("$routeChangeSuccess",function(event, current){
         callService.currentRoute = current.templateUrl;
         if (
             current.templateUrl == "templates/login.html" ||
@@ -191,40 +191,47 @@ clicklife.run(function($rootScope, $location, Auth){
 });
 
 clicklife.run(function($rootScope, $interval,$timeout, msg, music,$location,Auth){
-    $rootScope.$on('$routeChangeStart', function (event) {
-        var i;;
-            msg.on("connect", function(){
-                $interval.cancel(i);
-                music.stop("custom");
-                music.play("contact_added",false);
-                //subscribe to personal chanel
-                if(Auth.isLoggedIn()){
-                    io.socket.get("/user/personal_chanel",{username: Auth.getUser().username}, function(){
-                        console.log("subscribed to personal channel");
-                    });
-                }else{
-
-                }
-
+    function onConnect(data){
+        console.log("connected",data);
+        music.stop("custom");
+        music.play("contact_added",false);
+        //subscribe to personal chanel
+        if(Auth.isLoggedIn()){
+            io.socket.get("/user/personal_chanel",{username: Auth.getUser().username}, function(){
+                console.log("subscribed to personal channel");
             });
-            msg.on("disconnect", function(){
-                console.log('Network disconnected');
-                music.setStreamType("system");
-                music.play("custom",true, 500);
-                var i = $interval(function(){
-                    var conn = io.socket.isConnected();
-                    if(conn){
-                        $interval.cancel(i);
-                        music.stop("custom");
-                        return Materialize.toast("Соединение восстановлено...",1000)
-                        $location.path("/contacts");
-                    }else{
-                        return Materialize.toast("Соединение с сервером не установлено...",1000)
-                    };
-                },5000);
-                event.preventDefault();
+        }else{
+
+        }
+    }
+    function onReconnect(transport, numAttempts){
+        console.log(transport, numAttempts);
+        console.log("Reconnected",data);
+        music.play("login",false);
+        //subscribe to personal chanel
+        if(Auth.isLoggedIn()){
+            io.socket.get("/user/personal_chanel",{username: Auth.getUser().username}, function(){
+                console.log("subscribed to personal channel");
             });
+            //необходимо обновить данные не дошедшие во время отключения
+        }
+    }
+    function onDisconnect(){
+        Materialize.toast("Связь с сервером потеряна, попытка повторного подключения",1000);
+        music.setStreamType("system");
+        music.play("custom",false,0);
+        io.socket.off("connect", onConnect);//он нужен только для первого раза
+    };
+    io.socket.on("connect",onConnect);
+    io.socket.on("reconnect", onReconnect);
+    io.socket.on("reconnecting", function(numAttempts){
+        if(numAttempts % 2 == 0){
+            Materialize.toast("Подключение... ");
+            music.setStreamType("system");
+            music.play("call_ended",false,0);
+        }
     });
+    io.socket.on("disconnect",onDisconnect);
 
 });
 
@@ -246,7 +253,7 @@ clicklife.run(function( msg, callService,$timeout){
 /***********************************************************************************************************************
  * SERVICES
  **********************************************************************************************************************/
-clicklife.factory("Auth", function($interval, $location){
+clicklife.factory("Auth", function($interval){
     var storage = {
         set user(value){
             var j =  JSON.stringify( value );
@@ -258,7 +265,6 @@ clicklife.factory("Auth", function($interval, $location){
         }
     };
     var interval;
-    var period_ms = 30000; //каждые 30 сек
     var auto_reconnect = function(period_ms){
         if(interval){
             console.log("автообновление уже запущено");
@@ -288,22 +294,6 @@ clicklife.factory("Auth", function($interval, $location){
 
     };
     return{
-        watchMe: function($scope){
-            $scope.$watch(Auth.isLoggedIn, function (value, oldValue) {
-                if(!value && oldValue) {
-                    console.log("User Disconnect");
-                    io.socket.get("/user/logout",{id:storage.user.id}, function(){
-                        storage.user = {};
-                        $location.path("/login");
-                    });
-                }
-                if(value) {
-                    console.log("Connected success");
-                    //Do something when the user is connected
-                }
-
-            }, true);
-        },
         getUser: function(){
             return storage.user;
         },
@@ -332,7 +322,6 @@ clicklife.factory("Auth", function($interval, $location){
     }
 });
 clicklife.factory("User", function(){
-    var users = {};
     return {
         getById: function(id,cb){
             io.socket.get("/user/"+id,{},function(data){
@@ -342,7 +331,7 @@ clicklife.factory("User", function(){
     }
 });
 clicklife.factory("msg", function(Auth){
-    var _io = io;
+
     return{
         isConnected: function(){
             return io.socket.isConnected();
@@ -364,28 +353,15 @@ clicklife.factory("msg", function(Auth){
     }
 });
 /*** call service ***/
-clicklife.service("callService", function(User){
+clicklife.service("callService", function(){
    var that = this;
    this.initCall = function(username){
        window.location.href="#call/"+username+"/1";
    } ;
    this.isCalling = false;
-    this.nowOnCall = false;
-    this.initCallToUser = function(userId){
-        User.getById(userId,function(user){
-            if(!user){
-                alert("Невозможно установить связь");
-            }else{
-                Materialize.toast("Установка соединения... ",500);
-                that.initCall(user.username);
-            }
-
-        });
-    };
     this.callTo = function(user){
         that.initCall(user.username);
     };
-
     this.currentRoute = "";
 });
 /***
@@ -425,7 +401,7 @@ clicklife.service("image", function(){
     /** get picture from camera or gallery **/
     this.getPicture = function(cb){
         return  navigator.camera.getPicture(cb, function(message) {
-                alert('get picture failed');
+                alert('get picture failed '+message);
             },{
                 quality: 90,
                 destinationType: navigator.camera.DestinationType.FILE_URI,
@@ -465,12 +441,10 @@ clicklife.service("music", function(){
     this.STREAM_VOICE_CALL = "voice_call";
     this.STREAM_ALARM = "alarm";
     this.STREAM_DTMF = "dtmf";
-    this.MIC_ON = "on";
-    this.MIC_OFF = "off";
     var asset_url = "/android_asset/www/music/";
     if(cordova.platformId == "browser"){
         asset_url = "music/";
-    };
+    }
     var now_playing = {};
     var stop_request = false;
     var streamType = this.STREAM_MUSIC;
@@ -480,7 +454,10 @@ clicklife.service("music", function(){
     this.stopAll = function(){
         for(var sound in now_playing){
             try{
-                that.stop(sound);
+                if(typeof(now_playing[sound])!= 'undefined'){
+                    now_playing[sound].stop();
+                    now_playing[sound].stop_requested = true;
+                }
             }catch(e){}
         }
         return true;
@@ -524,14 +501,11 @@ clicklife.service("music", function(){
     this.muteMicrophone = function(muted){
         try{
             Media.mute_microphone(muted);
-        } catch(e){console.log(e)};
+        } catch (e) {
+            console.log(e)
+        }
     };
 
-    /*** togle speakerPhone
-     * @param bool state - true = speaker is on, false = speaker is off
-     * ****/
-    this.toggleSpeaker = function(state){
-    };
 
     //play sound
     this.play = function(sound, loopSong, loop_interval){
@@ -546,7 +520,7 @@ clicklife.service("music", function(){
         if(typeof(now_playing[sound])!= 'undefined'){
             now_playing[sound].stop();
             delete now_playing[sound];
-        };
+        }
         var filename = asset_url+ sound + ".mp3";
         now_playing[sound] = new Media(filename, null, function MediaError(e){
             console.log("Music play Error", e);
@@ -767,11 +741,6 @@ clicklife.controller("ConfirmCtrl", function($scope, $location, Auth){
  Contacts
  *********/
 clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout, Auth, $location, callService){
-    $scope.$on('ngRepeatFinished', function(ngRepeatFinishedEvent) {
-        $timeout(function(){
-            $('.dropdown-button').dropdown();
-        },false,100);
-    });
     $('ul.tabs').tabs();
     var w = $( window ).width() * 0.80;
     if(w > 500){
@@ -788,44 +757,63 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
     $scope.requestNumber = "";
     $scope.search = [];
     $scope.search_string = "";
+    $scope.dialogsCount = 0;
+    $scope.me = Auth.getUser();
+    $scope.groupname = "";
+    $scope.groupdescription = "";
+    $scope.groupicon = "";
+    $scope.editableGroup = "";
+    $scope.editableUser = "";
+    $scope.userGroup = "";
+    $('select').material_select();
     if($routeParams.isGroups && $routeParams.isGroups == '1'){
         $('ul.tabs').tabs('select_tab', 'groups');
     }
-    //controller init
-    io.socket.get("/contacts/get_by_user",{user: Auth.getUser().id}, function(data){
-        $scope.$apply(function(){
-            console.log(data, "Contacts initialized");
-            $scope.contacts = data;
+    $scope.initController = function(){
+        io.socket.get("/contacts/get_by_user",{user: Auth.getUser().id}, function(data){
+            $scope.$apply(function(){
+                console.log(data, "Contacts initialized");
+                $scope.contacts = data;
+            });
         });
-    });
-    io.socket.get("/contacts/get_groups_by_user",{user: Auth.getUser().id}, function(gData){
-        $scope.$apply(function(){
-            $scope.groups = gData;
+        io.socket.get("/contacts/get_groups_by_user",{user: Auth.getUser().id}, function(gData){
+            $scope.$apply(function(){
+                $scope.groups = gData;
 
+            });
         });
-    });
-    io.socket.on("user", function contactUpdateEvent(msg){
-        console.log("userEvent", msg, $scope.contacts);
-        angular.forEach($scope.contacts, function(row, k){
-            if(row.contact.id == msg.data.id){
-                var upd = false;
-                if(msg.data.is_online != $scope.contacts[k].contact.is_online){
-                    if(msg.data.is_online == '1'){
-                        music.setStreamType("ring");
-                        music.play("contact_added");
-                        // window.plugin.notification.local.add({ text: 'Пользователь появился в сети', title:msg.data.fio + "))"  });
-                    }else{
-                        music.setStreamType("ring");
-                        music.play("logoff");
-                        // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:msg.data.fio+ "(("  });
+        io.socket.on("user", function contactUpdateEvent(msg){
+            console.log("userEvent", msg, $scope.contacts);
+            angular.forEach($scope.contacts, function(row, k){
+                if(row.contact.id == msg.data.id){
+                    if(msg.data.is_online != $scope.contacts[k].contact.is_online){
+                        if(msg.data.is_online == '1'){
+                            music.setStreamType("ring");
+                            music.play("contact_added");
+                            // window.plugin.notification.local.add({ text: 'Пользователь появился в сети', title:msg.data.fio + "))"  });
+                        }else{
+                            music.setStreamType("ring");
+                            music.play("logoff");
+                            // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:msg.data.fio+ "(("  });
+                        }
                     }
+                    $scope.contacts[k].contact = msg.data;
+                    $scope.$apply();
                 }
-                $scope.contacts[k].contact = msg.data;
-                $scope.$apply();
-            }
+            });
         });
-    });
+        io.socket.get("/dialog/get_count_by_user",{user: Auth.getUser().id},function(data){
+            $scope.$apply(function(){
+                $scope.dialogsCount = data.count;
+            });
 
+        });
+        $scope.$on('ngRepeatFinished', function(ngRepeatFinishedEvent) {
+            $timeout(function(){
+                $('.dropdown-button').dropdown();
+            },false,100);
+        });
+    };
     //создание контакта
     $scope.addContact = function(){
         window.plugins.PickContact.chooseContact(function (contactInfo) {
@@ -877,13 +865,19 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
     };
     $scope.search_users = function(){
         io.socket.get("/user/search",{q: $scope.search_string}, function(results){
-
             $scope.search_string = "";
             var r = [];
 
             for(var i in results){
                 if(results[i].id == Auth.getUser().id){
                     continue;
+                }
+                for(var k in $scope.contacts){
+                    if($scope.contacts[k].contact.id == results[i].id){
+                        results[i].is_added = true;
+                    }else{
+                        results[i].is_added = false;
+                    }
                 }
                 r.push(results[i]);
             }
@@ -940,10 +934,6 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
     };
 
     /*** Add froup **/
-    $scope.groupname = "";
-    $scope.groupdescription = "";
-    $scope.groupicon = "";
-    $scope.editableGroup = "";
     $scope.addGroup = function(){
         if(!$scope.groupname || !$scope.groupdescription){
             return Materialize.toast("Заполните название и описание группы",1000);
@@ -958,7 +948,6 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
                 if(data.error){
                     return Materialize.toast(data.error,2000);
                 }
-
                 angular.forEach($scope.groups, function(value,ind){
                     if(value.id == data.created[0].id){
                         $scope.groupname = "";
@@ -968,7 +957,6 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
                         $scope.$apply();
                     }
                 });
-
             });
         }else{
             io.socket.get("/contacts/add_group",{
@@ -981,6 +969,7 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
                 }
                 $scope.groupname = "";
                 $scope.groupdescription = "";
+                data.created.users = [];
                 $scope.groups.push(data.created);
                 $scope.$apply();
             });
@@ -999,27 +988,18 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
     /***
      * edit usergroup
      */
-    $('select').material_select();
-    $scope.editableUser = "";
-    $scope.userGroup = "";
     $scope.editUserGroup = function(user){
-        $scope.editableUser = user.id;
+        $scope.editableUser = user.contact.id;
         $('#modal3').openModal();
         $('select').material_select();
     };
     $scope.saveUserGroup = function(){
         console.log($scope.userGroup);
-        angular.forEach($scope.contacts, function(contact,key){
-            if(contact.id == $scope.editableUser){
-                $scope.contacts[key].group.name = $scope.userGroup.name;
-            }
-
-        });
-        io.socket.get("/contacts/change_group",{
+        io.socket.get("/contacts/add_user_to_group",{
             contact: $scope.editableUser,
             group: $scope.userGroup.id
         },function(data){
-            return Materialize.toast("Сохранено",1000);
+            return Materialize.toast(data.message,1000);
         });
     };
     /***
@@ -1028,16 +1008,14 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
     $scope.chatWith = function(user){
         //location.href="#chat/"+user.contact.id;
         Materialize.toast("Подождите...",560);
-        io.socket.get("/dialog/join",{ user: user.contact.id}, function(data){
+        io.socket.get("/dialog/join",{ user: user.id}, function(data){
             console.log(data);
             location.href="#dialog/"+data.dialog;
         });
     };
-
     $scope.callToUser = function(user){
         return callService.callTo(user.contact);
     };
-
     $scope.removeContact = function(user, index){
         navigator.notification.confirm(
             'Удалить '+user.contact.fio+"  из Ваших контактов ?", // message
@@ -1048,6 +1026,21 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
                     io.socket.get("/contacts/delete_contact",{contact: user.id}, function(){});
                 }else{
                     //nothing
+                }
+            },
+            'Подтвердите удаление',           // title
+            ['Да','Нет']     // buttonLabels
+        );
+    };
+    $scope.chatWithGroup = function(group){}
+    $scope.removeGroup = function(group, index){
+        navigator.notification.confirm(
+            'Удалить  группу '+group.name+"  из списка групп ?", // message
+            function(answer){
+                if(answer == '1'){
+                    //delete
+                    $scope.groups.splice(index, 1);
+                    io.socket.get("/contacts/delete_group",{group: group.id}, function(){});
                 }
             },
             'Подтвердите удаление',           // title
@@ -1484,7 +1477,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
 
         session.call();
         $scope.sessions[contactName] = session;
-    };
+    }
     function onMessageReceive (data) {
         //console.log("Recieved_locally",data);
         var name = data.from;

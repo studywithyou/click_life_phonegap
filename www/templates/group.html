@@ -96,8 +96,62 @@
             </ul>
         </li>
     </ul>
-    <div class="col s12" ng-if="!contacts">
-        <p class="z-depth-5">В группе еще нет контактов</p>
+
+</div>
+<div class="col s12" ng-if="!contacts">
+    <p class="z-depth-5">В группе еще нет контактов</p>
+</div>
+<div id="modal2" class="modal">
+    <div class="modal-content">
+        <div class="input-field phone ">
+            <label for="gname">
+                Название группы
+            </label>
+            <input type="text" ng-model="groupname" id="gname" />
+        </div>
+        <div class="input-field phone ">
+            <label for="gdesc">
+                Описание группы
+            </label>
+            <input type="text" ng-model="groupdescription" id="gdesc" />
+        </div>
+        <div>
+            <p class="col s3">
+                <input name="group1" ng-model="groupicon" type="radio" id="test1" value="insert_chart" />
+                <label for="test1">
+                    <i class="small material-icons">insert_chart</i>
+                </label>
+            </p>
+            <p class="col s3">
+                <input name="group1" ng-model="groupicon" type="radio" id="test2" value="info_outline" />
+                <label for="test2">
+                    <i class="small material-icons">info_outline</i>
+                </label>
+            </p>
+            <p class="col s3">
+                <input name="group1" ng-model="groupicon" type="radio" id="test3" value="perm_identity" />
+                <label for="test3">
+                    <i class="small material-icons">perm_identity</i>
+                </label>
+            </p>
+            <p class="col s3">
+                <input name="group1" ng-model="groupicon" type="radio" id="test4" value="language" />
+                <label for="test4">
+                    <i class="small material-icons">language</i>
+                </label>
+            </p>
+            <p class="col s3">
+                <input name="group1" ng-model="groupicon" type="radio" id="test5" value="thumb_up" />
+                <label for="test5">
+                    <i class="small material-icons">thumb_up</i>
+                </label>
+            </p>
+
+        </div>
+    </div>
+    <div class="modal-footer">
+        <a    ng-click="addGroup()" class="modal-action modal-close waves-effect waves-green btn-flat">Сохранить</a>
+        <a  class="modal-action modal-close waves-effect waves-red btn-flat ">Отменить</a>
     </div>
 </div>
 <div class="fixed-action-btn  click-to-toggle" style="bottom: 45px; right: 24px;">
@@ -106,6 +160,7 @@
     </a>
     <ul>
         <li><a ng-click="chatWithGroup()" class="btn-floating green"><i class="material-icons">chat</i></a></li>
+        <li><a ng-click="editGroup()" class="btn-floating orange"><i class="material-icons">mode_edit</i></a></li>
         <li><a  href="#contacts" class="btn-floating blue"><i class="material-icons">contacts</i></a></li>
         <li><a  href="#contacts/1" class="btn-floating red"><i class="material-icons">navigate_before</i></a></li>
     </ul>

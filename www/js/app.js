@@ -962,15 +962,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                 if(data.error){
                     return Materialize.toast(data.error,2000);
                 }
-                angular.forEach($scope.groups, function(value,ind){
-                    if(value.id == data.created[0].id){
-                        $scope.groupname = "";
-                        $scope.groupdescription = "";
-                        $scope.editableGroup = "";
-                        $scope.groups[ind]= data.created[0];
-                        $scope.$apply();
-                    }
-                });
+                $scope.group = data.created;
             });
         }else{
             io.socket.get("/contacts/add_group",{
@@ -1130,6 +1122,39 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
             },false,100);
         });
     };
+    $scope.groupname = $scope.group.name;
+    $scope.groupicon = $scope.group.icon;
+    $scope.groupdescription = $scope.group.description;
+    $scope.editableGroup = $scope.group.id;
+    $scope.editGroup = function(){
+        $scope.groupname = $scope.group.name;
+        $scope.groupicon = $scope.group.icon;
+        $scope.groupdescription = $scope.group.description;
+        $scope.editableGroup = $scope.group.id;
+        $('#modal2').openModal();
+    };
+    /*** Add froup **/
+    $scope.addGroup = function(){
+        if(!$scope.groupname || !$scope.groupdescription){
+            return Materialize.toast("Заполните название и описание группы",1000);
+        }
+        if($scope.editableGroup){
+            io.socket.get("/contacts/edit_group",{
+                name: $scope.groupname,
+                description: $scope.groupdescription,
+                icon: $scope.groupicon,
+                id: $scope.editableGroup
+            }, function(data){
+                if(data.error){
+                    return Materialize.toast(data.error,2000);
+                }
+                $scope.$apply(function(){
+                    $scope.group= data.created[0];
+                });
+            });
+        }
+    };
+
 
     /***
      * Chat with user

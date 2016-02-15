@@ -76,10 +76,11 @@
                     <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.is_online == 1]" ng-repeat="user in search" >
                         <img ng-src="{{user.avatar}}" alt="" class="circle">
                         <span class="title">{{user.fio}}</span>
-                        <a ng-if="user.is_added == false" class="btn-floating btn-small waves-effect waves-light red" ng-click="addFromSearch(user, $index)">
-                            <i class="material-icons">add</i>
+
+                        <a  ng-if="user.is_added == true" ng-click="chatWith(user)" class="secondary-content" >
+                            <i class="material-icons">chat</i>
                         </a>
-                        <a  ng-if="user.is_added == true" ng-click="chatWith(user)" class="secondary-content dropdown-button" >
+                        <a  ng-if="user.is_added == false" ng-click="addFromSearch(user, $index)" class="secondary-content" >
                             <i class="material-icons">chat</i>
                         </a>
                     </li>
@@ -106,8 +107,8 @@
             ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.contact.is_online == 1]"
             ng-repeat="user in contacts"
             on-finish-render="ngRepeatFinished">
-            <img ng-src="{{user.contact.avatar}}" alt="" class="circle" ng-click="chatWith(user)">
-            <span class="title" >{{user.contact.fio}}</span>
+            <img ng-src="{{user.contact.avatar}}" alt="" class="circle" ng-click="chatWith(user.contact)">
+            <span class="title" ng-click="chatWith(user.contact)" >{{user.contact.fio}}</span>
             <p>
                 {{user.contact.username}}
             </p>
@@ -122,7 +123,7 @@
                 </li>
                 <li class="divider"></li>
                 <li  >
-                    <a ng-click="callToUser(user)">
+                    <a ng-click="callToUser(user.contact)">
                         <i class="material-icons small">call</i>
                     </a>
                 </li>
@@ -135,7 +136,7 @@
                 </li>
                 <li class="divider"></li>
                 <li>
-                    <a ng-click="removeContact(user)">
+                    <a ng-click="removeContact(user, $index)">
                         <i class="material-icons small">delete</i>
                     </a>
                 </li>
@@ -148,7 +149,7 @@
         <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.contact.is_online == 1]"
              ng-repeat="user in contacts"
              on-finish-render="ngRepeatFinished">
-            <img ng-src="{{user.contact.avatar}}" alt="" ng-click="chatWith(user.contact)" class="circle" ng-click="chatWith(user)">
+            <img ng-src="{{user.contact.avatar}}" alt="" ng-click="chatWith(user.contact)" class="circle" >
             <span class="title" ng-click="chatWith(user.contact)" >{{user.contact.fio}}</span>
             <p>
                 {{user.contact.username}}
@@ -164,7 +165,7 @@
                 </li>
                 <li class="divider"></li>
                 <li ng-if="user.contact.is_online == 1" >
-                    <a ng-click="callToUser(user)">
+                    <a ng-click="callToUser(user.contact)">
                         <i class="material-icons small">call</i>
                     </a>
                 </li>
@@ -224,7 +225,7 @@
             </a>
             <ul id='dropdown_{{group.id}}' class='dropdown-content usermenu'>
                 <li>
-                    <a href="#groups/{{group.id}}">
+                    <a href="#group/{{group.id}}">
                         <i class="material-icons small">folder_shared</i>
                     </a>
                 </li>

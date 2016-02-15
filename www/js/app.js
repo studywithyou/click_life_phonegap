@@ -1068,7 +1068,104 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
        $location.path("/group/"+group.id);
     };
 });
+/*** Groupusers ***/
+clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, Auth, $location, callService){
+    io.socket.on("reconnect",function(){
+        $timeout(function () {
+            $scope.initController();
+        }, 0);
+    });
+    $('ul.tabs').tabs();
+    var w = $( window ).width() * 0.80;
+    if(w > 500){
+        w=500;
+    }
+    $(".button-collapse").sideNav({
+        menuWidth: w,
+        closeOnClick: true
+    });
+    $('.modal-trigger').leanModal();
+    $scope.contacts  = [];
+    $scope.groupId = $routeParams.groupId;
+    $scope.showPreloader = true;
+    $scope.me = Auth.getUser();
+    $scope.dialogsCount = ($scope.me.dialogs)?$scope.me.dialogs:0;
+    $scope.group = {};
+    $scope.contactsCount = 0;
+    $('select').material_select();
+    $scope.initController = function(){
+        $scope.showPreloader = true;
+        io.socket.get("/contacts/get_group",{group: $scope.groupId}, function(data){
+            $scope.$apply(function(){
+                console.log(data, "Contacts initialized");
+                $scope.showPreloader = false;
+                $scope.contacts = data.users;
+                $scope.group = data.group;
+            });
+        });
+        io.socket.on("user", function contactUpdateEvent(msg){
+            angular.forEach($scope.contacts, function(row, k){
+                if(row.id == msg.data.id){
+                    $scope.$apply(function(){
+                        $scope.contacts[k] = msg.data;
+                    });
+                }
+            });
+        });
+        io.socket.get("/contacts/get_count_by_user",{user: Auth.getUser().id},function(data){
+            $scope.$apply(function(){
+                $scope.contactsCount = data.count;
+            });
+        });
+        io.socket.get("/dialog/get_count_by_user",{user: Auth.getUser().id},function(data){
+            console.log(data);
+            $scope.$apply(function(){
+                $scope.dialogsCount = data.count;
+            });
 
+        });
+        $scope.$on('ngRepeatFinished', function(ngRepeatFinishedEvent) {
+            $timeout(function(){
+                $('.dropdown-button').dropdown();
+            },false,100);
+        });
+    };
+
+    /***
+     * Chat with user
+     */
+    $scope.chatWith = function(user){
+        //location.href="#chat/"+user.contact.id;
+        Materialize.toast("Подождите...",560);
+        io.socket.get("/dialog/join",{ user: user.id}, function(data){
+            console.log(data);
+            location.href="#dialog/"+data.dialog;
+        });
+    };
+    $scope.callToUser = function(user){
+        return callService.callTo(user);
+    };
+    $scope.removeUserFromGroup = function(user, index){
+        navigator.notification.confirm(
+            'Удалить  пользователя '+user.fio+"  из группы ?", // message
+            function(answer){
+                if(answer == '1'){
+                    //delete
+                    io.socket.get("/contacts/delete_user_from_group",{group: $scope.groupId, user: user.id}, function(){
+                        $scope.$apply(function(){
+                            $scope.contacts.splice(index, 1);
+                        });
+                    });
+                }
+            },
+            'Подтвердите удаление',           // title
+            ['Да','Нет']     // buttonLabels
+        );
+    }
+    $scope.chatWithGroup = function(){
+        $location.path("/groupchat/"+$scope.groupId);
+    };
+});
 /****************************************************************************
  * Chat
  * *******/

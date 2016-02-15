@@ -1495,3 +1495,7 @@ span.usergroupicon {
 span.contactgroupname {
     color: #26A69A;
 }
+
+#all_contacts .contactsingroup {
+    margin-top:67px;
+}

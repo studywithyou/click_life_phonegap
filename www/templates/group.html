@@ -61,7 +61,7 @@
     </div>
 </nav>
 
-<div id="all_contacts" class="col s12" style="margin-top: 67px;">
+<div id="all_contacts" class="col s12 contactsingroup">
     <ul class="collection">
         <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.is_online == 1]"
              ng-repeat="user in contacts"
@@ -96,7 +96,9 @@
             </ul>
         </li>
     </ul>
-
+    <div class="col s12" ng-if="!contacts">
+        <p class="z-depth-5">В группе еще нет контактов</p>
+    </div>
 </div>
 <div class="fixed-action-btn  click-to-toggle" style="bottom: 45px; right: 24px;">
     <a class="btn-floating btn-large red">
@@ -104,7 +106,7 @@
     </a>
     <ul>
         <li><a ng-click="chatWithGroup()" class="btn-floating green"><i class="material-icons">chat</i></a></li>
-        <li><a  href="#contacts" class="btn-floating blue"><i class="material-icons">navigate_contacts</i></a></li>
+        <li><a  href="#contacts" class="btn-floating blue"><i class="material-icons">contacts</i></a></li>
         <li><a  href="#contacts/1" class="btn-floating red"><i class="material-icons">navigate_before</i></a></li>
     </ul>
 </div>

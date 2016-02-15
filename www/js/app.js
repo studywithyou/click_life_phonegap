@@ -129,6 +129,10 @@ clicklife.config(function($routeProvider){
             templateUrl:'templates/contacts.html',
             controller:'ContactsCtrl'
         }).
+        when("/group/:groupId",{
+            templateUrl:'templates/group.html',
+            controller:'GroupCtrl'
+        }).
         when("/dialog/:dialogId",{
             templateUrl:'templates/chat.html',
             controller:'ChatCtrl'
@@ -206,7 +210,7 @@ clicklife.run(function($rootScope, $interval,$timeout, msg, music,$location,Auth
     }
     function onReconnect(transport, numAttempts){
         console.log(transport, numAttempts);
-        console.log("Reconnected",data);
+        music.setStreamType("system");
         music.play("login",false);
         //subscribe to personal chanel
         if(Auth.isLoggedIn()){
@@ -217,7 +221,7 @@ clicklife.run(function($rootScope, $interval,$timeout, msg, music,$location,Auth
         }
     }
     function onDisconnect(){
-        Materialize.toast("Связь с сервером потеряна, попытка повторного подключения",1000);
+        Materialize.toast("Связь с сервером потеряна, попытка повторного подключения",3000);
         music.setStreamType("system");
         music.play("custom",false,0);
         io.socket.off("connect", onConnect);//он нужен только для первого раза
@@ -226,13 +230,12 @@ clicklife.run(function($rootScope, $interval,$timeout, msg, music,$location,Auth
     io.socket.on("reconnect", onReconnect);
     io.socket.on("reconnecting", function(numAttempts){
         if(numAttempts % 2 == 0){
-            Materialize.toast("Подключение... ");
+            Materialize.toast("Подключение... ",3000);
             music.setStreamType("system");
             music.play("call_ended",false,0);
         }
     });
     io.socket.on("disconnect",onDisconnect);
-
 });
 
 clicklife.run(function( msg, callService,$timeout){
@@ -270,7 +273,7 @@ clicklife.factory("Auth", function($interval){
             console.log("автообновление уже запущено");
             return;
         }
-        interval = $interval(function(){
+        interval=  setInterval(function(){
            io.socket.post("/user/login",{
                login: storage.user.username,
                password: storage.user.password
@@ -301,9 +304,9 @@ clicklife.factory("Auth", function($interval){
             storage.user = aUser;
             afterUpdate();
             if(aUser){
-                auto_reconnect(160000);
+                auto_reconnect(1600000);
             }else{
-                $interval.cancel(interval);
+
 
             }
 
@@ -740,8 +743,16 @@ clicklife.controller("ConfirmCtrl", function($scope, $location, Auth){
 /****************************************************************************
  Contacts
  *********/
-clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout, Auth, $location, callService){
+clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$timeout, Auth, $location, callService){
+    io.socket.on("reconnect",function(){
+
+        $timeout(function () {
+            // 0 ms delay to reload the page.
+            $route.reload();
+        }, 0);
+    });
     $('ul.tabs').tabs();
+
     var w = $( window ).width() * 0.80;
     if(w > 500){
         w=500;
@@ -752,13 +763,14 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
     });
     $('.modal-trigger').leanModal();
     $scope.contacts  = [];
+    $scope.showPreloader = true;
     $scope.groups = [];
     $scope.online_users = [];
     $scope.requestNumber = "";
     $scope.search = [];
     $scope.search_string = "";
-    $scope.dialogsCount = 0;
     $scope.me = Auth.getUser();
+    $scope.dialogsCount = ($scope.me.dialogs)?$scope.me.dialogs:0;
     $scope.groupname = "";
     $scope.groupdescription = "";
     $scope.groupicon = "";
@@ -770,16 +782,17 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
         $('ul.tabs').tabs('select_tab', 'groups');
     }
     $scope.initController = function(){
+        $scope.showPreloader = true;
         io.socket.get("/contacts/get_by_user",{user: Auth.getUser().id}, function(data){
             $scope.$apply(function(){
                 console.log(data, "Contacts initialized");
+                $scope.showPreloader = false;
                 $scope.contacts = data;
             });
         });
         io.socket.get("/contacts/get_groups_by_user",{user: Auth.getUser().id}, function(gData){
             $scope.$apply(function(){
                 $scope.groups = gData;
-
             });
         });
         io.socket.on("user", function contactUpdateEvent(msg){
@@ -803,6 +816,7 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
             });
         });
         io.socket.get("/dialog/get_count_by_user",{user: Auth.getUser().id},function(data){
+            console.log(data);
             $scope.$apply(function(){
                 $scope.dialogsCount = data.count;
             });
@@ -1050,7 +1064,9 @@ clicklife.controller("ContactsCtrl", function($scope,$routeParams,music,$timeout
             ['Да','Нет']     // buttonLabels
         );
     };
-
+    $scope.showGroup = function(group){
+       $location.path("/group/"+group.id);
+    };
 });
 
 /****************************************************************************
@@ -1066,7 +1082,9 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
     },false,100);
     // initialization //
     var initDialog = function(){
-        io.socket.get("/dialog/get_messages",{dialog: $scope.dialogId}, function(data){
+        io.socket.get("/dialog/get_messages",{
+            dialog: $scope.dialogId
+        }, function(data){
             giftsService.getAll(function(gifts){
                 $timeout(function() {
                     $("#messages").animate({
@@ -1126,8 +1144,8 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
                     music.play("new_message");
                 }
                 $scope.messages.push(data);
-                if($scope.messages.length > 60){
-                    $scope.messages.slice(40);
+                if($scope.messages.length > 100){
+                    $scope.messages.slice(99);
                 }
                 $scope.showPreloader = false;
                 $scope.$apply();
@@ -1264,6 +1282,7 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
             callService.callTo(data.user);
         });
     };
+
 });
 
 /*** call ***/
@@ -1310,7 +1329,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
                $timeout(function(){
                    $scope.call_timer++;
                },1);
-            },1000);
+            },1000,1000);
         },
         stop: function(){
             $interval.cancel($scope.timer.ti);

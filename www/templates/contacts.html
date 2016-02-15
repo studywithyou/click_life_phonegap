@@ -32,7 +32,7 @@
                     <a href="#cash">
                         <i class="material-icons">credit_card</i>
                         Кошелек
-                        <span class="badge clever">{{me.ballance}}</span>
+                        <span class="badge clever">{{me.balance}}</span>
                     </a>
                 </li>
                 <li>
@@ -216,22 +216,22 @@
 <div id="groups" class="col s12">
     <ul class="collection">
         <li class="collection-item avatar" ng-repeat="group in groups" on-finish-render="ngRepeatFinished">
-            <i class="material-icons circle">{{group.icon}}</i>
-            <span class="title">{{group.name}} </span>
+            <i class="material-icons circle" ng-click="showGroup(group)">{{group.icon}}</i>
+            <span class="title" ng-click="showGroup(group)">{{group.name}} </span>
             <p>{{group.description}} (<strong>{{group.users.length}}</strong> участников)</p>
             <a  class="secondary-content dropdown-button" data-activates='dropdown_{{group.id}}'>
                 <i class="material-icons">more_vert</i>
             </a>
             <ul id='dropdown_{{group.id}}' class='dropdown-content usermenu'>
                 <li>
-                    <a href="#groupchat/{{group.id}}">
-                        <i class="material-icons small">chat</i>
+                    <a href="#groups/{{group.id}}">
+                        <i class="material-icons small">folder_shared</i>
                     </a>
                 </li>
                 <li class="divider"></li>
                 <li>
-                    <a href="#groups/{{group.id}}">
-                        <i class="material-icons small">folder_shared</i>
+                    <a href="#groupchat/{{group.id}}">
+                        <i class="material-icons small">chat</i>
                     </a>
                 </li>
                 <li class="divider"></li>

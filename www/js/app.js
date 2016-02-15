@@ -842,13 +842,14 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                     if(data.error && data.found == '3'){
                         return alert(data.error);
                     }
+
                     if(data.error && data.found =='0'){
                         //запрос контактов
                         $scope.requestNumber = data.phone;
                         $scope.$apply();
                         return jQuery('#modal1').openModal();
                     }
-                    Materialize.toast("Контакт добавлен",1000);
+
                     $scope.$apply(function(){
                         if(data.created.contact.is_online == '1'){
                             music.setStreamType("ring");
@@ -859,6 +860,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                             music.play("logoff");
                             // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:data.created.contact.fio+ "(("  });
                         }
+                        Materialize.toast("Контакт добавлен",1000);
                         $scope.contacts.push(data.created);
                     });
                 });
@@ -878,6 +880,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
             return Materialize.toast("Ваш запрос отправлен",2000);
         });
     };
+
     $scope.search_users = function(){
         io.socket.get("/user/search",{q: $scope.search_string}, function(results){
             $scope.search_string = "";
@@ -916,22 +919,10 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
              Materialize.toast("Контакт уже есть в Вашем списке",1000);
              return false;
         }
-
-        io.socket.get("/contacts/add_contact_by_id",{
-            email: user.email,
-            phone: user.username,
-            user: Auth.getUser().id
-        }, function(data){
-            if(data.error && data.found == '3'){
+        io.socket.get("/contacts/add_contact_by_id", {contact: user.id, user: Auth.getUser().id}, function(data){
+            if(data.error){
                 return alert(data.error);
-            }
-            if(data.error && data.found =='0'){
-                //запрос контактов
-                $scope.requestNumber = data.phone;
-                $scope.$apply();
-                return jQuery('#modal1').openModal();
             }else{
-                Materialize.toast("Контакт добавлен",1000);
                 $scope.$apply(function(){
                     if(data.created.contact.is_online == '1'){
                         music.setStreamType("ring");
@@ -943,7 +934,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                         music.play("logoff");
                     }
                     $scope.contacts.push(data.created);
-
+                    Materialize.toast("Контакт добавлен",1000);
                 });
             }
         });

@@ -29,7 +29,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
     $scope.search = [];
     $scope.search_string = "";
     $scope.me = Auth.getUser();
-    $scope.dialogsCount = ($scope.me.dialogs)?$scope.me.dialogs:0;
+    $scope.dialogsCount = ($scope.me.dialogs)?$scope.me.dialogs.lenth:0;
     $scope.groupname = "";
     $scope.groupdescription = "";
     $scope.groupicon = "";

@@ -1,0 +1,225 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="AmdModulesDependencies" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="AnonymousFunctionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="AssignmentResultUsedJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="AssignmentToForLoopParameterJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="AssignmentToFunctionParameterJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="BadExpressionStatementJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="BlockStatementJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="BreakStatementJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="BreakStatementWithLabelJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="CallerJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="ChainedEqualityJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ChainedFunctionCallJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="CheckEmptyScriptTag" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="CheckImageSize" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="CodeAssistanceForCoreModules" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="CommaExpressionJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="ConditionalExpressionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ConditionalExpressionWithIdenticalBranchesJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ConfusingFloatingPointLiteralJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ConfusingPlusesOrMinusesJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ConstantConditionalExpressionJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="ConstantIfStatementJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="ConstantOnLHSOfComparisonJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ConstantOnRHSOfComparisonJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ContinueOrBreakFromFinallyBlockJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="ContinueStatementJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ContinueStatementWithLabelJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="CyclomaticComplexityJS" enabled="false" level="INFO" enabled_by_default="false">
+      <option name="m_limit" value="10" />
+    </inspection_tool>
+    <inspection_tool class="DartPathPackageReference" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="DebuggerStatementJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="DefaultNotLastCaseInSwitchJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="DivideByZeroJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="DocumentWriteJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="DuplicateCaseLabelJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="DuplicateConditionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="DynamicallyGeneratedCodeJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ES6Validation" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="EmptyCatchBlockJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="EmptyFinallyBlockJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="EmptyStatementBodyJS" enabled="true" level="INFO" enabled_by_default="true">
+      <option name="m_reportEmptyBlocks" value="false" />
+    </inspection_tool>
+    <inspection_tool class="EmptyTryBlockJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="EqualityComparisonWithCoercionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="Eslint" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ExceptionCaughtLocallyJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="FallThroughInSwitchStatementJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="ForLoopReplaceableByWhileJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ForLoopThatDoesntUseLoopVariableJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="FunctionNamingConventionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="FunctionWithInconsistentReturnsJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="FunctionWithMultipleLoopsJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="FunctionWithMultipleReturnPointsJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="GjsLint" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="HamlNestedTagContent" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="HbEmptyBlock" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="HtmlDeprecatedTag" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="HtmlFormInputWithoutLabel" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="HtmlPresentationalElement" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="HtmlUnknownAnchorTarget" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="HtmlUnknownAttribute" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="myValues">
+        <value>
+          <list size="0" />
+        </value>
+      </option>
+      <option name="myCustomValuesEnabled" value="true" />
+    </inspection_tool>
+    <inspection_tool class="HtmlUnknownBooleanAttribute" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="HtmlUnknownTag" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="myValues">
+        <value>
+          <list size="6">
+            <item index="0" class="java.lang.String" itemvalue="nobr" />
+            <item index="1" class="java.lang.String" itemvalue="noembed" />
+            <item index="2" class="java.lang.String" itemvalue="comment" />
+            <item index="3" class="java.lang.String" itemvalue="noscript" />
+            <item index="4" class="java.lang.String" itemvalue="embed" />
+            <item index="5" class="java.lang.String" itemvalue="script" />
+          </list>
+        </value>
+      </option>
+      <option name="myCustomValuesEnabled" value="true" />
+    </inspection_tool>
+    <inspection_tool class="HtmlUnknownTarget" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="IfStatementWithIdenticalBranchesJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="IfStatementWithTooManyBranchesJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="IncompatibleMaskJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="IncrementDecrementResultUsedJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="InfiniteLoopJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="InfiniteRecursionJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="InnerHTMLJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="JSAccessibilityCheck" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSBitwiseOperatorUsage" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSCheckFunctionSignatures" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSClosureCompilerSyntax" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSCommentMatchesSignature" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSComparisonWithNaN" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSConsecutiveCommasInArrayLiteral" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSConstructorReturnsPrimitive" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSDeclarationsAtScopeStart" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="JSDeprecatedSymbols" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSDuplicatedDeclaration" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSFileReferences" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSHint" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="JSJQueryEfficiency" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSLastCommaInArrayLiteral" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSLastCommaInObjectLiteral" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSLint" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="JSMethodCanBeStatic" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSMismatchedCollectionQueryUpdate" enabled="true" level="INFO" enabled_by_default="true">
+      <option name="queries" value="trace,write,forEach" />
+      <option name="updates" value="pop,push,shift,splice,unshift" />
+    </inspection_tool>
+    <inspection_tool class="JSPotentiallyInvalidConstructorUsage" enabled="true" level="INFO" enabled_by_default="true">
+      <option name="myConsiderUppercaseFunctionsToBeConstructors" value="true" />
+    </inspection_tool>
+    <inspection_tool class="JSPotentiallyInvalidTargetOfIndexedPropertyAccess" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSPotentiallyInvalidUsageOfThis" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSPrimitiveTypeWrapperUsage" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSReferencingMutableVariableFromClosure" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSSuspiciousNameCombination" enabled="true" level="INFO" enabled_by_default="true">
+      <group names="x,width,left,right" />
+      <group names="y,height,top,bottom" />
+      <exclude classes="Math" />
+    </inspection_tool>
+    <inspection_tool class="JSTypeOfValues" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSUndeclaredVariable" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSUndefinedPropertyAssignment" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="JSUnfilteredForInLoop" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSUnnecessarySemicolon" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSUnresolvedFunction" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSUnresolvedLibraryURL" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSUnresolvedVariable" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSUnusedAssignment" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSUnusedGlobalSymbols" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSUnusedLocalSymbols" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSValidateJSDoc" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="JSValidateTypes" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="Jscs" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="KarmaConfigFile" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="LabeledStatementJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="LocalVariableNamingConventionJS" enabled="false" level="INFO" enabled_by_default="false">
+      <option name="m_regex" value="[a-z][A-Za-z]*" />
+      <option name="m_minLength" value="1" />
+      <option name="m_maxLength" value="32" />
+    </inspection_tool>
+    <inspection_tool class="LoopStatementThatDoesntLoopJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="MagicNumberJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="NegatedConditionalExpressionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="NegatedIfStatementJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="NestedAssignmentJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="NestedConditionalExpressionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="NestedFunctionCallJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="NestedFunctionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="NestedSwitchStatementJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="NestingDepthJS" enabled="false" level="INFO" enabled_by_default="false">
+      <option name="m_limit" value="5" />
+    </inspection_tool>
+    <inspection_tool class="NodeModulesDependencies" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="NodeRequireContents" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="NonBlockStatementBodyJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="NonShortCircuitBooleanExpressionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ObjectAllocationIgnoredJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="OctalIntegerJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="OverlyComplexArithmeticExpressionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="OverlyComplexBooleanExpressionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ParameterNamingConventionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ParametersPerFunctionJS" enabled="false" level="INFO" enabled_by_default="false">
+      <option name="m_limit" value="5" />
+    </inspection_tool>
+    <inspection_tool class="PlatformDetectionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="PointlessArithmeticExpressionJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="PointlessBitwiseExpressionJS" enabled="true" level="INFO" enabled_by_default="true">
+      <option name="m_ignoreExpressionsContainingConstants" value="false" />
+    </inspection_tool>
+    <inspection_tool class="PointlessBooleanExpressionJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="ReplaceAssignmentWithOperatorAssignmentJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="RequiredAttributes" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="myAdditionalRequiredHtmlAttributes" value="" />
+    </inspection_tool>
+    <inspection_tool class="ReservedWordUsedAsNameJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="ReturnFromFinallyBlockJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="ReuseOfLocalVariableJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ShiftOutOfRangeJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="SillyAssignmentJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="StatementsPerFunctionJS" enabled="false" level="INFO" enabled_by_default="false">
+      <option name="m_limit" value="30" />
+    </inspection_tool>
+    <inspection_tool class="StringLiteralBreaksHTMLJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="SwitchStatementWithNoDefaultBranchJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="TailRecursionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="TaskInspection" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="TaskProblemsInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
+    <inspection_tool class="TextLabelInSwitchStatementJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ThisExpressionReferencesGlobalObjectJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="ThreeNegationsPerFunctionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="ThrowFromFinallyBlockJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="TodoComment" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="TrivialConditionalJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="TrivialIfJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="UnnecessaryContinueJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="UnnecessaryLabelJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="UnnecessaryLabelOnBreakStatementJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="UnnecessaryLabelOnContinueStatementJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="UnnecessaryLocalVariableJS" enabled="true" level="INFO" enabled_by_default="true">
+      <option name="m_ignoreImmediatelyReturnedVariables" value="false" />
+      <option name="m_ignoreAnnotatedVariables" value="false" />
+    </inspection_tool>
+    <inspection_tool class="UnnecessaryReturnJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="UnreachableCodeJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="UnterminatedStatementJS" enabled="true" level="INFO" enabled_by_default="true">
+      <option name="ignoreSemicolonAtEndOfBlock" value="true" />
+    </inspection_tool>
+    <inspection_tool class="UnusedCatchParameterJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="VoidExpressionJS" enabled="false" level="INFO" enabled_by_default="false" />
+    <inspection_tool class="WithStatementJS" enabled="true" level="INFO" enabled_by_default="true" />
+    <inspection_tool class="XHTMLIncompatabilitiesJS" enabled="false" level="INFO" enabled_by_default="false" />
+  </profile>
+</component>

@@ -271,7 +271,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
         });
     };
     $scope.callToUser = function(user){
-        return callService.callTo(user.contact);
+        return callService.callTo(user);
     };
     $scope.removeContact = function(user, index){
         navigator.notification.confirm(
@@ -311,6 +311,9 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
         $location.path("/group/"+group.id);
     };
 });
+
+
+
 /*** Groupusers ***/
 clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, Auth, $location, callService){
     io.socket.on("reconnect",function(){

@@ -64,31 +64,31 @@
 <div id="all_contacts" class="col s12 contactsingroup">
     <ul class="collection">
         <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.is_online == 1]"
-             ng-repeat="user in contacts"
+             ng-repeat="gu in contacts"
              on-finish-render="ngRepeatFinished">
-            <img ng-src="{{user.avatar}}" alt="" ng-click="chatWith(user)" class="circle">
-            <span class="title" ng-click="chatWith(user)" >{{user.username}}</span>
+            <img ng-src="{{gu.user.avatar}}" alt="" ng-click="chatWith(gu.user)" class="circle">
+            <span class="title" ng-click="chatWith(gu.user)" >{{gu.user.username}}</span>
             <p>
-                {{user.username}}
+                {{gu.user.fio}}
             </p>
             <a  class="secondary-content dropdown-button" data-activates='dropdown_{{user.id}}'>
                 <i class="material-icons">more_vert</i>
             </a>
             <ul id='dropdown_{{user.id}}' class='dropdown-content usermenu'>
                 <li>
-                    <a ng-click="chatWith(user)" >
+                    <a ng-click="chatWith(gu.user)" >
                         <i class="material-icons small">chat</i>
                     </a>
                 </li>
                 <li class="divider"></li>
-                <li ng-if="user.contact.is_online == 1" >
-                    <a ng-click="callToUser(user)">
+                <li ng-if="gu.user.is_online == 1" >
+                    <a ng-click="callToUser(gu.user)">
                         <i class="material-icons small">call</i>
                     </a>
                 </li>
-                <li class="divider" ng-if="user.contact.is_online == 1"></li>
+                <li class="divider" ng-if="gu.user.is_online == 1"></li>
                 <li>
-                    <a ng-click="removeUserFromGroup(user, $index)">
+                    <a ng-click="removeUserFromGroup(gu.user, $index)">
                         <i class="material-icons small">remove_circle</i>
                     </a>
                 </li>

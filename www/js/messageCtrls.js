@@ -5,6 +5,17 @@
  * Chat
  * *******/
 clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService, music, $location,$timeout, giftsService, image, Video){
+    // on update_message_status
+    function updateMessageStatus(socketData){
+        angular.forEach($scope.messages, function(msg,key){
+            if(msg.id == socketData.message){
+                $scope.messages[key].readed = 1;
+                $scope.$apply();
+            }
+        });
+    };
+    io.socket.on("update_message_status", updateMessageStatus);
+    //reconnect
     function reconnectEvent(){
         $timeout(function () {
             // 0 ms delay to reload the page.
@@ -12,6 +23,50 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
         }, 0);
     };
     io.socket.on("reconnect",reconnectEvent);
+    //typing event
+    function typingEvent(socketData){
+        if(socketData.dialog == $scope.dialogId  && socketData.name != Auth.getUser().fio){
+            $scope.typestatus = 1;
+            $scope.typeName = socketData.name;
+            $scope.$apply();
+            setTimeout(function(){
+                $scope.typestatus = 0;
+                $scope.$apply();
+            },2500);
+        }
+    }
+    io.socket.on("typing", typingEvent);
+    // on new message
+    function messageRecievedEvent(data){
+        if(data.dialog == $scope.dialogId){
+            if(data.from.id !=  Auth.getUser().id){
+                //update readed status, msg = incoming
+                io.socket.get("/dialog/update_message_status",{
+                    message: data.id,
+                    dialog: $scope.dialogId
+                }, function(){});
+                data.readed = 1;
+                music.setStreamType(music.STREAM_SYSTEM);
+                music.play("new_message");
+            }
+            $scope.messages.push(data);
+            if($scope.messages.length > 100){
+                $scope.messages.slice(99);
+            }
+            $scope.showPreloader = false;
+            $scope.$apply();
+            $timeout(function() {
+                $("#messages").animate({
+                    scrollTop: $("#messages .container").height()
+                },400);
+                $('.materialboxed').materialbox();
+                $(".fancybox_iframe").fancybox();
+            }, 10, false);
+        }else{
+            // do nothink
+        }
+    };
+    io.socket.on("new_message", messageRecievedEvent);
 
 
     $('.modal-trigger').leanModal();
@@ -21,7 +76,7 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
         $('.dropdown-button').dropdown();
     },false,100);
     // initialization //
-    var initDialog = function(){
+    function initDialog(){
         io.socket.get("/dialog/get_messages",{
             dialog: $scope.dialogId
         }, function(data){
@@ -57,59 +112,6 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
                 },500,false);
             });
         });
-        // on Type
-        io.socket.on("typing", function(data){
-            //console.log("typing",data);
-            if(data.dialog == $scope.dialogId  && data.name != Auth.getUser().fio){
-                $scope.typestatus = 1;
-                $scope.typeName = data.name;
-                $scope.$apply();
-                setTimeout(function(){
-                    $scope.typestatus = 0;
-                    $scope.$apply();
-                },2500);
-            }
-        });
-        // on new message
-        io.socket.on("new_message", function(data){
-            if(data.dialog == $scope.dialogId){
-                if(data.from.id !=  Auth.getUser().id){
-                    //update readed status, msg = incoming
-                    io.socket.get("/dialog/update_message_status",{
-                        message: data.id,
-                        dialog: $scope.dialogId
-                    }, function(){});
-                    data.readed = 1;
-                    music.setStreamType(music.STREAM_SYSTEM);
-                    music.play("new_message");
-                }
-                $scope.messages.push(data);
-                if($scope.messages.length > 100){
-                    $scope.messages.slice(99);
-                }
-                $scope.showPreloader = false;
-                $scope.$apply();
-                $timeout(function() {
-                    $("#messages").animate({
-                        scrollTop: $("#messages .container").height()
-                    },400);
-                    $('.materialboxed').materialbox();
-                    $(".fancybox_iframe").fancybox();
-                }, 10, false);
-            }else{
-                // do nothink
-            }
-        });
-        // on update_message_status
-        io.socket.on("update_message_status", function(data){
-            angular.forEach($scope.messages, function(msg,key){
-                if(msg.id == data.message){
-                    $scope.messages[key].readed = 1;
-                    $scope.$apply();
-                }
-            });
-        });
-
     };
     $scope.showPreloader = true;
     $scope.dialogId = $routeParams.dialogId;
@@ -225,7 +227,10 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
     };
 
     $scope.$on('$destroy', function() {
-        io.socket.off('update_message_status', update_message_status);
+        io.socket.off('update_message_status', updateMessageStatus);
+        io.socket.off("reconnect",reconnectEvent);
+        io.socket.off("typing", typingEvent);
+        io.socket.off("new_message", messageRecievedEvent);
     });
 });
 

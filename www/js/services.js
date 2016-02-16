@@ -199,6 +199,12 @@ clicklife.service("music", function(){
     var now_playing = {};
     var stop_request = false;
     var streamType = this.STREAM_MUSIC;
+    var streamVolume = '1.0';
+
+
+    this.setVolume = function(value){
+        streamVolume = value;
+    };
     /***
      * stop all sounds
      */
@@ -270,6 +276,7 @@ clicklife.service("music", function(){
 
         if(typeof(now_playing[sound])!= 'undefined'){
             now_playing[sound].stop();
+            //now_playing[sound].release();
             delete now_playing[sound];
         }
         var filename = asset_url+ sound + ".mp3";
@@ -283,11 +290,13 @@ clicklife.service("music", function(){
                     }
                     if(now_playing[sound].stop_requested){
                         now_playing[sound].stop();
+                        //now_playing[sound].release();
                     }
                 }, loop_interval);
             }
         }, streamType);
         now_playing[sound].stop_requested = false;
+        now_playing[sound].setVolume(streamVolume);
         now_playing[sound].play();
         return true;
     };

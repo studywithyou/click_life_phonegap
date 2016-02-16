@@ -1,0 +1,110 @@
+<nav class="yellow darken-2 z-depth-0">
+    <div class="nav-wrapper">
+        <a  class="center pagename">
+            <img ng-src="{{dialogIcon}}" alt="" class="circle"/>
+            Диалог с  {{dialogName}}
+        </a>
+        <a href="#contacts" data-activates="slide-out" class="left"><i class="icon-back"></i></a>
+        <a class="search_btn right dropdown-button"
+          data-activates="slide-ccnav" id="aaa">
+            <i class="icon-cmenu"></i>
+        </a>
+        <ul id="slide-ccnav" class="dropdown-content">
+            <li><a href="#!">Какая то ссылка</a></li>
+            <li><a href="#!">Какая то ссылка</a></li>
+        </ul>
+    </div>
+</nav>
+<div id="messages">
+    <div class="container">
+        <div  ng-class="{true:'message to', false:'message from'}[message.from.id == uId]"
+              ng-repeat="message in messages" >
+            <img  ng-if="message.from.id != uId" ng-src="{{message.from.avatar}}" alt="" class="ava circle"/>
+            <div class="message_body">
+                <div class="message_text" ng-bind-html="message.text | colonToSmiley">
+
+                </div>
+                <div class="time">{{message.createdAt | date: 'HH:mm'}}</div>
+                <div ng-class="{true:'delivery ok', false:'delivery false'}[message.readed == 1]"></div>
+            </div>
+            <img  ng-if="message.from.id == uId" ng-src="{{message.from.avatar}}" alt="" class="ava circle"/>
+            <div style="clear: both;"></div>
+        </div>
+        <div class="progress" ng-show="showPreloader">
+            <div class="indeterminate"></div>
+        </div>
+        <div  ng-class="{true:'typestatus active', false:'typestatus' }[typestatus == 1]">{{typeName}} печатает... </div>
+    </div>
+</div>
+<div id="control">
+    <div class="container">
+        <div class="row">
+            <div class="col s12">
+                <div class="fav_attach">
+                    <ul>
+
+                        <li>
+                            <a ng-click="sendAudio()" class="sound">
+                                <i class="material-icons">volume_up</i>
+                            </a>
+                        </li>
+                        <li>
+                            <a ng-click="sendImage()" class="picture">
+                                <i class="material-icons">image</i>
+                            </a>
+                        </li>
+                        <li><a ng-click="sendVideo()" class="video">
+                            <i class="material-icons">videocam</i>
+                        </a></li>
+                        <li>
+                            <a href="javascript: jqComponents.openEmoticons();" id="emojibtn" class="smile">
+                            <i class="material-icons">tag_faces</i>
+                        </a>
+                        </li>
+                        <li class="last">
+                            <a ng-click="callRequest()" class="call">
+                                <i class="material-icons">call</i>
+                            </a>
+                        </li>
+                    </ul>
+                    <a href="#toggle" class="toggler"></a>
+                </div>
+                <div class="text_form"  emoji-form emoji-message="emojiMessage" ng-keyup="imTyping($event)">
+                    <textarea name="ddd"
+
+                              id="textform"
+                              placeholder="Введите сообщение"
+                              ng-model="emojiMessage.messagetext"
+                            ></textarea>
+                </div>
+                <a ng-click="sendMessage()" class="sendbtnn"></a>
+                <div style="clear: both;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="bottom" class="yellow darken-2">
+    <div class="container">
+        <div class="col s12">
+            <div class="banner">
+                Дари подарки друзьям, стань
+                десятимиллионным и получи
+            </div>
+            <a href="#modal2" data-target="modal2" class="btn_click_life modal-trigger"></a>
+
+        </div>
+    </div>
+</div>
+<div id="modal2" class="modal bottom-sheet">
+    <div class="modal-content">
+        <div class="presents">
+            <ul>
+                <li>
+                    <a  ng-repeat="gift in gifts" ng-click="sendGift(gift)">
+                        <img ng-src="{{gift.image}}" alt="{{gift.name}}"/>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

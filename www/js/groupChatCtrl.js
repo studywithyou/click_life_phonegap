@@ -67,9 +67,27 @@ clicklife.controller("GroupChatCtrl", function($scope,Auth, $routeParams,callSer
     io.socket.on("new_message", messageReceivedEvent);
 
     $scope.groupId = $routeParams.groupId;
+    $scope.dialogId = 0;
+    $scope.dialog = {};
     $scope.group = {};
     function initDialog(){
-        io.socket.get("/contact_groups/"+$scope.groupId,function(data){
+        io.socket.get("/contact_groups/"+$scope.groupId,function(gdata){
+            console.log(gdata);
+            $scope.$apply(function(){
+                $scope.group = gdata;
+                $scope.dialogId = gdata.dialog.id;
+                $scope.dialog = gdata.dialog;
+                initMessages();
+                $scope.dialogName = "Группа "+$scope.group.name;
+            });
+        });
+
+    };
+    function initMessages(){
+        io.socket.get("/dialog/get_messages",{
+            dialog: $scope.dialogId
+        }, function(data){
+            //console.log("Msg0,",data, $scope);
             giftsService.getAll(function(gifts){
                 $timeout(function() {
                     $("#messages").animate({
@@ -79,8 +97,8 @@ clicklife.controller("GroupChatCtrl", function($scope,Auth, $routeParams,callSer
                 }, 10, false);
                 data.messages = data.messages.reverse();
                 $scope.messages = data.messages;
-                $scope.dialogIcon = data.dialogIcon;
-                $scope.dialogName = data.dialogName;
+                //$scope.dialogIcon = data.dialogIcon;
+               // $scope.dialogName = data.dialogName;
                 $scope.showPreloader = false;
                 $scope.gifts = gifts;
                 angular.forEach($scope.messages, function(m,k){
@@ -102,7 +120,7 @@ clicklife.controller("GroupChatCtrl", function($scope,Auth, $routeParams,callSer
                 },500,false);
             });
         });
-    };
+    }
     $('.modal-trigger').leanModal();
     jqComponents.initTogler();
     $(".fancybox_iframe").fancybox();
@@ -110,7 +128,6 @@ clicklife.controller("GroupChatCtrl", function($scope,Auth, $routeParams,callSer
         $('.dropdown-button').dropdown();
     },false,100);
     $scope.showPreloader = true;
-    $scope.dialogId = $routeParams.dialogId;
     $scope.uId = Auth.getUser().id;
     $scope.messages = [];
     $scope.dialogName = "";

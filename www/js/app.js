@@ -131,7 +131,7 @@ clicklife.config(function($routeProvider){
             templateUrl:'templates/group.html',
             controller:'GroupCtrl'
         }).
-        when("/groupChat/:groupId",{
+        when("/groupchat/:groupId",{
             templateUrl:'templates/groupChat.html',
             controller:'GroupChatCtrl'
         }).

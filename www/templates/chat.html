@@ -1,60 +1,9 @@
 <nav class="yellow darken-2 z-depth-0">
     <div class="nav-wrapper">
-        <a href="#" class="center pagename">
+        <a  class="center pagename">
             <img ng-src="{{dialogIcon}}" alt="" class="circle"/>
             Диалог с  {{dialogName}}
         </a>
-        <div id="slide-out" class="side-nav">
-            <div class="head yellow darken-2">
-                <div class="title">Click Life</div>
-                <div class="subtitle">Какой то текст</div>
-            </div>
-            <ul>
-                <li>
-                    <a href="#contacts">
-                        <i class="material-icons">contacts</i>
-                        Контакты
-                        <span class="badge">121</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#dialogs">
-                        <i class="material-icons">chat</i>
-                        Диалоги
-                        <span class="badge">2</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#contacts">
-                        <i class="material-icons">group_work</i>
-                        Групы
-                        <span class="badge">33</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#profile">
-                        <i class="material-icons">settings</i>
-                        Настройки профиля
-                        <span class="badge"></span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#page/rules">
-                        <i class="material-icons">assignment</i>
-                        Правила
-                        <span class="badge"></span>
-                    </a>
-                </li>
-                <li>
-                    <a href="#logout">
-                        <i class="material-icons">exit_to_app</i>
-                        Выход
-                        <span class="badge"></span>
-                    </a>
-                </li>
-            </ul>
-        </div>
-
         <a href="#contacts" data-activates="slide-out" class="left"><i class="icon-back"></i></a>
         <a class="search_btn right dropdown-button"
           data-activates="slide-ccnav" id="aaa">
@@ -68,7 +17,6 @@
 </nav>
 <div id="messages">
     <div class="container">
-
         <div  ng-class="{true:'message to', false:'message from'}[message.from.id == uId]"
               ng-repeat="message in messages" >
             <img  ng-if="message.from.id != uId" ng-src="{{message.from.avatar}}" alt="" class="ava circle"/>

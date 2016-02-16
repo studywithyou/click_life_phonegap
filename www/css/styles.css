@@ -1461,3 +1461,41 @@ audio {
     width: 220px!important;
 }
 
+
+#all_contacts .collection {
+    overflow: visible;
+}
+#online .collection {
+    overflow: visible;
+}
+#groups .collection {
+    overflow: visible;
+}
+
+
+.dropdown-content.usermenu  a {
+    text-align: center!important;
+}
+
+span.usergroupicon {
+    position: absolute;
+    left: 7px;
+    top: 10px;
+    z-index: 99;
+    border: 1px solid #26a69a;
+    border-radius: 50%;
+    display: inline-block;
+    height: 20px;
+    width: 20px;
+    text-align: center;
+    background: #EFEFEF;
+    color: #6F926E;
+}
+
+span.contactgroupname {
+    color: #26A69A;
+}
+
+#all_contacts .contactsingroup {
+    margin-top:67px;
+}

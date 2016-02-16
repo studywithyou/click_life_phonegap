@@ -1,1 +1,14 @@
-pageId
+<nav class="yellow darken-2 z-depth-0">
+    <div class="nav-wrapper">
+        <a href="#" class="center pagename">{{page.name}}</a>
+        <ul id="nav-mobile" class="left">
+            <li><a href="#contacts" class="icon-back"></a></li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container register_page">
+    <div class="row register_form">
+        <div class="text msg " ng-bind-html="page.content"></div>
+    </div>
+</div>

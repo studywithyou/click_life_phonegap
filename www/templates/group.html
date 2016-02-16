@@ -60,28 +60,35 @@
         <a href="#contacts/1" data-activates="slide-out" class="button-collapse"><i class="icon-menu"></i></a>
     </div>
 </nav>
+<div class="row yellow darken-2 tbs ng-scope">
+    <div class="col s12">
 
+    </div>
+</div>
+<div class="col s12" ng-if="!contacts">
+    <p class="z-depth-5">В группе еще нет контактов</p>
+</div>
 <div id="all_contacts" class="col s12 contactsingroup">
     <ul class="collection">
-        <li  ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.is_online == 1]"
-             ng-repeat="gu in contacts"
-             on-finish-render="ngRepeatFinished">
+        <li ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.is_online == 1]"
+            ng-repeat="gu in contacts"
+            on-finish-render="ngRepeatFinished">
             <img ng-src="{{gu.user.avatar}}" alt="" ng-click="chatWith(gu.user)" class="circle">
-            <span class="title" ng-click="chatWith(gu.user)" >{{gu.user.username}}</span>
+            <span class="title" ng-click="chatWith(gu.user)">{{gu.user.username}}</span>
             <p>
                 {{gu.user.fio}}
             </p>
-            <a  class="secondary-content dropdown-button" data-activates='dropdown_{{user.id}}'>
+            <a class="secondary-content dropdown-button" data-activates='dropdown_{{user.id}}'>
                 <i class="material-icons">more_vert</i>
             </a>
             <ul id='dropdown_{{user.id}}' class='dropdown-content usermenu'>
                 <li>
-                    <a ng-click="chatWith(gu.user)" >
+                    <a ng-click="chatWith(gu.user)">
                         <i class="material-icons small">chat</i>
                     </a>
                 </li>
                 <li class="divider"></li>
-                <li ng-if="gu.user.is_online == 1" >
+                <li ng-if="gu.user.is_online == 1">
                     <a ng-click="callToUser(gu.user)">
                         <i class="material-icons small">call</i>
                     </a>
@@ -96,10 +103,6 @@
             </ul>
         </li>
     </ul>
-
-</div>
-<div class="col s12" ng-if="!contacts">
-    <p class="z-depth-5">В группе еще нет контактов</p>
 </div>
 <div id="modal2" class="modal">
     <div class="modal-content">
@@ -107,41 +110,41 @@
             <label for="gname">
                 Название группы
             </label>
-            <input type="text" ng-model="groupname" id="gname" />
+            <input type="text" ng-model="groupname" id="gname"/>
         </div>
         <div class="input-field phone ">
             <label for="gdesc">
                 Описание группы
             </label>
-            <input type="text" ng-model="groupdescription" id="gdesc" />
+            <input type="text" ng-model="groupdescription" id="gdesc"/>
         </div>
         <div>
             <p class="col s3">
-                <input name="group1" ng-model="groupicon" type="radio" id="test1" value="insert_chart" />
+                <input name="group1" ng-model="groupicon" type="radio" id="test1" value="insert_chart"/>
                 <label for="test1">
                     <i class="small material-icons">insert_chart</i>
                 </label>
             </p>
             <p class="col s3">
-                <input name="group1" ng-model="groupicon" type="radio" id="test2" value="info_outline" />
+                <input name="group1" ng-model="groupicon" type="radio" id="test2" value="info_outline"/>
                 <label for="test2">
                     <i class="small material-icons">info_outline</i>
                 </label>
             </p>
             <p class="col s3">
-                <input name="group1" ng-model="groupicon" type="radio" id="test3" value="perm_identity" />
+                <input name="group1" ng-model="groupicon" type="radio" id="test3" value="perm_identity"/>
                 <label for="test3">
                     <i class="small material-icons">perm_identity</i>
                 </label>
             </p>
             <p class="col s3">
-                <input name="group1" ng-model="groupicon" type="radio" id="test4" value="language" />
+                <input name="group1" ng-model="groupicon" type="radio" id="test4" value="language"/>
                 <label for="test4">
                     <i class="small material-icons">language</i>
                 </label>
             </p>
             <p class="col s3">
-                <input name="group1" ng-model="groupicon" type="radio" id="test5" value="thumb_up" />
+                <input name="group1" ng-model="groupicon" type="radio" id="test5" value="thumb_up"/>
                 <label for="test5">
                     <i class="small material-icons">thumb_up</i>
                 </label>
@@ -150,8 +153,8 @@
         </div>
     </div>
     <div class="modal-footer">
-        <a    ng-click="addGroup()" class="modal-action modal-close waves-effect waves-green btn-flat">Сохранить</a>
-        <a  class="modal-action modal-close waves-effect waves-red btn-flat ">Отменить</a>
+        <a ng-click="addGroup()" class="modal-action modal-close waves-effect waves-green btn-flat">Сохранить</a>
+        <a class="modal-action modal-close waves-effect waves-red btn-flat ">Отменить</a>
     </div>
 </div>
 <div class="fixed-action-btn  click-to-toggle" style="bottom: 45px; right: 24px;">
@@ -161,7 +164,7 @@
     <ul>
         <li><a ng-click="chatWithGroup()" class="btn-floating green"><i class="material-icons">chat</i></a></li>
         <li><a ng-click="editGroup()" class="btn-floating orange"><i class="material-icons">mode_edit</i></a></li>
-        <li><a  href="#contacts" class="btn-floating blue"><i class="material-icons">contacts</i></a></li>
-        <li><a  href="#contacts/1" class="btn-floating red"><i class="material-icons">navigate_before</i></a></li>
+        <li><a href="#contacts" class="btn-floating blue"><i class="material-icons">contacts</i></a></li>
+        <li><a href="#contacts/1" class="btn-floating red"><i class="material-icons">navigate_before</i></a></li>
     </ul>
 </div>

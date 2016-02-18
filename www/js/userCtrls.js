@@ -17,4 +17,6 @@ clicklife.controller("PageCtrl", function($scope,$location, $routeParams){
 clicklife.controller("CashCtrl", function($scope, $location){
 
 });
-clicklife.controller("ProfileCtrl", function($scope, $location){});
+clicklife.controller("ProfileCtrl", function($scope, $location, Auth){
+
+});

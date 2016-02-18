@@ -71,29 +71,27 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
         });
     }
     function onContact(data){
-        io.socket.get("/contacts/"+data.id, function(added_contact){
-            cordova.plugins.notification.local.schedule({
-                title: "Вас добавили!",
-                text: "К Вам добавился "+added_contact.contact.fio,
-                sound: "file://music/incoming_contact.mp3",
-                icon: added_contact.contact.avatar,
-                badge: 1,
-                data: { event:'contact_added',action:"#contacts" }
-            });
-            $scope.$apply(function(){
-                $scope.contacts.push(added_contact);
-            });
+        cordova.plugins.notification.local.schedule({
+            title: "Вас добавили!",
+            text: "К Вам добавился "+data.contact.fio,
+            sound: "file://music/incoming_contact.mp3",
+            icon: data.contact.avatar,
+            badge: 1,
+            data: { event:'contact_added',action:"#contacts" }
+        });
+        $scope.$apply(function(){
+            $scope.contacts.push(data);
         });
     }
     $scope.$on("$destroy", function(){
         io.socket.off("user", onUser);
-        io.socket.off("contacts", onContact);
+        io.socket.off("new_contact", onContact);
     });
     $scope.initController = function(){
         getContacts();
         getGroups();
         io.socket.on("user", onUser);
-        io.socket.on("contacts", onContact);
+        io.socket.on("new_contact", onContact);
         io.socket.get("/dialog/get_count_by_user",{user: Auth.getUser().id},function(data){
             console.log(data);
             $scope.$apply(function(){

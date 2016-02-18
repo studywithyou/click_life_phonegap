@@ -17,7 +17,6 @@ clicklife.controller("DialogsCtrl", function($scope, $location, Auth, $timeout, 
     });
     $('.modal-trigger').leanModal();
     function onMessageEvent(data){
-        console.log("onmessagedata," , data);
         music.setStreamType(music.STREAM_SYSTEM);
         if(data.type == 'win'){
             music.play("money_add");
@@ -35,6 +34,13 @@ clicklife.controller("DialogsCtrl", function($scope, $location, Auth, $timeout, 
                      $scope.dialogs[key].user_avatar = data.from.avatar;
                      // $scope.dialogs[key].user_fio = data.from.fio;
                      $scope.dialogs[key].m_created = data.createdAt;
+                     cordova.plugins.notification.local.schedule({
+                         title: "Новое сообщение",
+                         text: "у Вас поступило новое сообщеие",
+                         data: { event:'chat_added',action:"#dialog/"+data.dialog},
+                         icon: data.from.avatar,
+                         badge:$scope.dialogs.length
+                     });
                  }
              });
          });

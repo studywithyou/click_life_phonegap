@@ -71,7 +71,7 @@
   <plugin name="cordova-plugin-media-extended" source="npm" version="2.2.11"></plugin>
   <plugin name="com.badrit.contactpicker" spec="0.1.0" source="pgb" />
 
-  <plugin name="de.appplant.cordova.plugin.local-notification" spec="0.8.1" source="pgb" />
+  <plugin name="de.appplant.cordova.plugin.local-notification-sv" spec="1.2.5" source="pgb" />
   <plugin name="nl.x-services.plugins.toast" spec="2.0" source="pgb" />
   <plugin name="com.kolwit.pickcontact" spec="1.0.4" source="pgb" />
   <feature name="Media">

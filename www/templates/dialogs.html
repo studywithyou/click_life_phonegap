@@ -1,57 +1,56 @@
 <nav class="yellow darken-2 z-depth-0">
     <div class="nav-wrapper">
-        <a href="#" class="center pagename">Диалоги</a>
-
+        <a href="#dialogs" class="center pagename">Диалоги</a>
         <div id="slide-out" class="side-nav">
             <div class="head yellow darken-2">
                 <div class="title">Click Life</div>
-                <div class="subtitle">Какой то текст</div>
+                <div class="subtitle">{{me.fio}}</div>
             </div>
             <ul>
                 <li>
-                    <a href="#!">
+                    <a href="#contacts">
                         <i class="material-icons">contacts</i>
                         Контакты
-                        <span class="badge">121</span>
+                        <span class="badge">{{contactsCount}}</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#!">
+                    <a href="#dialogs">
                         <i class="material-icons">chat</i>
                         Диалоги
-                        <span class="badge">2</span>
+                        <span class="badge">{{dialogs.length}}</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#!">
+                    <a href="#contacts/1">
                         <i class="material-icons">group_work</i>
-                        Групы
-                        <span class="badge">33</span>
+                        Группы
+                        <span class="badge">{{groupsCount}}</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#!">
+                    <a href="#cash">
                         <i class="material-icons">credit_card</i>
                         Кошелек
-                        <span class="badge clever">330</span>
+                        <span class="badge clever">{{me.balance}}</span>
                     </a>
                 </li>
                 <li>
-                    <a href="#!">
+                    <a href="#profile">
                         <i class="material-icons">settings</i>
                         Настройки профиля
                         <span class="badge"></span>
                     </a>
                 </li>
                 <li>
-                    <a href="#!">
+                    <a href="#page/rules">
                         <i class="material-icons">assignment</i>
                         Правила
                         <span class="badge"></span>
                     </a>
                 </li>
                 <li>
-                    <a href="#!">
+                    <a href="#logout">
                         <i class="material-icons">exit_to_app</i>
                         Выход
                         <span class="badge"></span>
@@ -75,36 +74,67 @@
 
         </div>
         <a href="#" data-activates="slide-out" class="button-collapse"><i class="icon-menu"></i></a>
-        <a href="#" class="search_btn right button-collapse" data-activates="slide-search"><i
-                class="icon-search"></i></a>
+
     </div>
 </nav>
+<div class="row yellow darken-2 tbs ng-scope">
+    <div class="col s12">
 
+    </div>
+</div>
 <div id="all_contacts" class="col s12">
-    <ul class="collection" style="margin:0px;">
-        <li class="collection-item avatar online" >
+    <div ng-show="showPreloader" class="preloader-wrapper big active">
+        <div class="spinner-layer spinner-blue">
+            <div class="circle-clipper left">
+                <div class="circle"></div>
+            </div><div class="gap-patch">
+            <div class="circle"></div>
+        </div><div class="circle-clipper right">
+            <div class="circle"></div>
+        </div>
+        </div>
 
-            <span class="title">Иван kетров</span>
-            <p>Сообщение Сообщение Сообщение Сообщение Сообщение</p>
-            <a href="#!" class="secondary-content group">час назад</a>
-        </li>
-        <li class="collection-item avatar online" >
-            <img src="img/ava.png" alt="" class="circle">
-            <span class="title">Иван vетров</span>
-            <p>Сообщение Сообщение Сообщение Сообщение Сообщение</p>
-            <a href="#!" class="secondary-content group">только что</a>
-        </li>
-        <li class="collection-item avatar offline" >
-            <img src="img/ava.png" alt="" class="circle">
-            <span class="title">Иван tетров</span>
-            <p>Сообщение Сообщение Сообщение Сообщение Сообщение</p>
-            <a href="#!" class="secondary-content group">13.05.2003</a>
-        </li>
-        <li class="collection-item avatar offline" >
-            <img src="img/ava.png" alt="" class="circle">
-            <span class="title">Иван wетров</span>
-            <p>Сообщение Сообщение Сообщение Сообщение Сообщение</p>
-            <a href="#!" class="secondary-content group">час назад</a>
+        <div class="spinner-layer spinner-red">
+            <div class="circle-clipper left">
+                <div class="circle"></div>
+            </div><div class="gap-patch">
+            <div class="circle"></div>
+        </div><div class="circle-clipper right">
+            <div class="circle"></div>
+        </div>
+        </div>
+
+        <div class="spinner-layer spinner-yellow">
+            <div class="circle-clipper left">
+                <div class="circle"></div>
+            </div><div class="gap-patch">
+            <div class="circle"></div>
+        </div><div class="circle-clipper right">
+            <div class="circle"></div>
+        </div>
+        </div>
+
+        <div class="spinner-layer spinner-green">
+            <div class="circle-clipper left">
+                <div class="circle"></div>
+            </div><div class="gap-patch">
+            <div class="circle"></div>
+        </div><div class="circle-clipper right">
+            <div class="circle"></div>
+        </div>
+        </div>
+    </div>
+    <ul class="collection" style="margin:0px;">
+        <li class="collection-item avatar online" ng-click="openDialog(dialog)"
+            ng-repeat="dialog in dialogs"
+            on-finish-render="ngRepeatFinished">
+            <img ng-if="dialog.user_avatar" ng-src="{{dialog.user_avatar}}" alt="" class="circle">
+            <img ng-if="!dialog.user_avatar" ng-src="{{me.avatar}}" alt="" class="circle">
+            <span ng-if="dialog.user_fio"  class="title">{{dialog.user_fio}}</span>
+            <span ng-if="!dialog.user_fio"  class="title">{{dialog.dialog_name}}</span>
+            <p ng-if="dialog.message_text" ng-bind-html="dialog.message_text | colonToSmiley"></p>
+            <p ng-if="!dialog.message_text">Сообщений нет</p>
+            <a ng-if="dialog.message_text"   class="secondary-content group">{{dialog.m_created | date: 'HH:mm'}}</a>
         </li>
     </ul>
 </div>

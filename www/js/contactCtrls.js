@@ -83,13 +83,15 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
             io.socket.get("/contacts/"+data.id, function(added_contact){
                 cordova.plugins.notification.local.schedule({
                     title: "Вас добавили!",
-                    text: "К Вам добавился новый контакт ",
-                    sound: "file://music/login.mp3",
+                    text: "К Вам добавился "+added_contact.contact.fio,
+                    sound: "file://music/incoming_contact.mp3",
                     icon: added_contact.contact.avatar,
                     badge: 1,
                     data: { event:'contact_added',action:"#contacts" }
                 });
-                $scope.contacts.push(added_contact);
+                $scope.$apply(function(){
+                    $scope.contacts.push(added_contact);
+                });
             });
         });
         io.socket.get("/dialog/get_count_by_user",{user: Auth.getUser().id},function(data){

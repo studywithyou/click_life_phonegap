@@ -99,8 +99,8 @@
     <div class="modal-content">
         <div class="presents">
             <ul>
-                <li>
-                    <a  ng-repeat="gift in gifts" ng-click="sendGift(gift)">
+                <li ng-repeat="gift in gifts" ng-click="sendGift(gift)">
+                    <a  >
                         <img ng-src="{{gift.image}}" alt="{{gift.name}}"/>
                     </a>
                 </li>

@@ -29,9 +29,15 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
             $scope.typestatus = 1;
             $scope.typeName = socketData.name;
             $scope.$apply();
+            music.setStreamType("system");
+            music.play('typing',true,200);
+            setTimeout(function(){
+                music.stop('typing');
+            },1200);
             setTimeout(function(){
                 $scope.typestatus = 0;
                 $scope.$apply();
+
             },2500);
         }
     }
@@ -152,6 +158,8 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
         var msg = $scope.emojiMessage.messagetext;
         $scope.emojiMessage = {};
         $scope.emojiMessage.replyToUser = $scope.sendMessage;
+        music.setStreamType("system");
+        music.play("out_message");
         io.socket.get("/dialog/add_message",{
             dialog: $scope.dialogId,
             text:msg
@@ -267,7 +275,3 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
     });
 });
 
-/***
- * Dialog Between two users
- */
-clicklife.controller("DialogsCtrl", function($scope, $location){});

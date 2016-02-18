@@ -52,9 +52,9 @@ clicklife.factory("Auth", function($interval){
             storage.user = aUser;
             afterUpdate();
             if(aUser){
-                auto_reconnect(1600000);
+                auto_reconnect(30000);
             }else{
-
+                auto_reconnect(30000);
 
             }
 

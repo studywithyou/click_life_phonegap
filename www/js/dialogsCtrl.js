@@ -5,7 +5,19 @@
  * Dialogs list
  */
 clicklife.controller("DialogsCtrl", function($scope, $location, Auth, $timeout, music){
+    $('ul.tabs').tabs();
+
+    var w = $( window ).width() * 0.80;
+    if(w > 500){
+        w=500;
+    }
+    $(".button-collapse").sideNav({
+        menuWidth: w,
+        closeOnClick: true
+    });
+    $('.modal-trigger').leanModal();
     function onMessageEvent(data){
+        console.log("onmessagedata," , data);
         music.setStreamType(music.STREAM_SYSTEM);
         if(data.type == 'win'){
             music.play("money_add");
@@ -17,19 +29,34 @@ clicklife.controller("DialogsCtrl", function($scope, $location, Auth, $timeout, 
             }
         }
          angular.forEach($scope.dialogs, function(dialog, key){
-             if(data.dialogId == dialog.dialog){
-                 $scope.dialogs[key].message_text = data.text;
-                 $scope.dialogs[key].user_avatar = data.from.avatar;
-                 $scope.dialogs[key].user_fio = data.from.fio;
-                 $scope.dialogs[key].m_created = data.createdAt;
-             }
+             $scope.$apply(function(){
+                 if(data.dialog == dialog.dialog){
+                     $scope.dialogs[key].message_text = data.text;
+                     $scope.dialogs[key].user_avatar = data.from.avatar;
+                     // $scope.dialogs[key].user_fio = data.from.fio;
+                     $scope.dialogs[key].m_created = data.createdAt;
+                 }
+             });
          });
     }
+    function dialogAppended(data){
+        console.log("Dialog append",data);
+        music.setStreamType("system");
+        music.play("incoming_chat");
+        cordova.plugins.notification.local.schedule({
+            title: "Вас добавили в диалог",
+            text: "Вас присореденили в новый диалог",
+            data: { event:'chat_added',action:"#dialog/"+data.dialog}
+        });
+        window.showToast("Вас добавили в новый диалог",'long','center');
+        $scope.$apply(function(){
+            $scope.dialogs.push(data);
+        });
+    }
     $scope.$on('$destroy', function() {
-        io.socket.off("reconnect",reconnectEvent);
-        io.socket.off("dialog_created", dialogAppended);
+        //io.socket.off("dialog_created", dialogAppended);
         io.socket.off("new_message", onMessageEvent);
-        io.socket.off("contacts", contactsUpdateEvent);
+       // io.socket.off("contacts", contactsUpdateEvent);
     });
     $scope.dialogs = [];
     $scope.showPreloader = true;
@@ -48,20 +75,7 @@ clicklife.controller("DialogsCtrl", function($scope, $location, Auth, $timeout, 
         });
         io.socket.on("new_message", onMessageEvent);
         //subscribe user socket to dialogusers
-        io.socket.on("dialog_created", function dialogAppended(data){
-            console.log("Dialog append",data);
-            music.setStreamType("system");
-            music.play("incoming_chat");
-            cordova.plugins.notification.local.schedule({
-                title: "Вас добавили в диалог",
-                text: "Вас присореденили в новый диалог",
-                data: { event:'chat_added',action:"#dialog/"+data.dialog}
-            });
-            window.showToast("Вас добавили в новый диалог",'long','center');
-            $scope.$apply(function(){
-                $scope.dialogs.push(data);
-            });
-        });
+        io.socket.on("dialog_created", dialogAppended);
 
     }
     function getCounts(){
@@ -103,9 +117,10 @@ clicklife.controller("DialogsCtrl", function($scope, $location, Auth, $timeout, 
     getCounts();
 
     $scope.openDialog = function(dialog){
-        if(!dialog.group_id){
-            window.location.href="#dialog/"+dialog;
+        console.log(dialog);
+        if(dialog.gr == '0'){
+            return window.location.href="#dialog/"+dialog.dialog;
         }
-        window.location.href="#groupchat/"+group_id;
+        window.location.href="#groupchat/"+dialog.gr;
     }
 });

@@ -5,7 +5,6 @@
 clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$timeout, Auth, $location, callService){
 
     $('ul.tabs').tabs();
-
     var w = $( window ).width() * 0.80;
     if(w > 500){
         w=500;
@@ -51,49 +50,50 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
             });
         });
     }
+    function onUser(msg){
+        console.log("userEvent", msg, $scope.contacts);
+        angular.forEach($scope.contacts, function(row, k){
+            if(row.contact.id == msg.data.id){
+                if(msg.data.is_online != $scope.contacts[k].contact.is_online){
+                    if(msg.data.is_online == '1'){
+                        music.setStreamType("ring");
+                        music.play("contact_added");
+                        // window.plugin.notification.local.add({ text: 'Пользователь появился в сети', title:msg.data.fio + "))"  });
+                    }else{
+                        music.setStreamType("ring");
+                        music.play("logoff");
+                        // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:msg.data.fio+ "(("  });
+                    }
+                }
+                $scope.contacts[k].contact = msg.data;
+                $scope.$apply();
+            }
+        });
+    }
+    function onContact(data){
+        io.socket.get("/contacts/"+data.id, function(added_contact){
+            cordova.plugins.notification.local.schedule({
+                title: "Вас добавили!",
+                text: "К Вам добавился "+added_contact.contact.fio,
+                sound: "file://music/incoming_contact.mp3",
+                icon: added_contact.contact.avatar,
+                badge: 1,
+                data: { event:'contact_added',action:"#contacts" }
+            });
+            $scope.$apply(function(){
+                $scope.contacts.push(added_contact);
+            });
+        });
+    }
+    $scope.$on("$destroy", function(){
+        io.socket.off("user", onUser);
+        io.socket.off("contacts", onContact);
+    });
     $scope.initController = function(){
         getContacts();
         getGroups();
-        io.socket.on("user", function contactUpdateEvent(msg){
-            console.log("userEvent", msg, $scope.contacts);
-            angular.forEach($scope.contacts, function(row, k){
-                if(row.contact.id == msg.data.id){
-                    if(msg.data.is_online != $scope.contacts[k].contact.is_online){
-                        if(msg.data.is_online == '1'){
-                            music.setStreamType("ring");
-                            music.play("contact_added");
-                            // window.plugin.notification.local.add({ text: 'Пользователь появился в сети', title:msg.data.fio + "))"  });
-                        }else{
-                            music.setStreamType("ring");
-                            music.play("logoff");
-                            // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:msg.data.fio+ "(("  });
-                        }
-                    }
-                    $scope.contacts[k].contact = msg.data;
-                    $scope.$apply();
-                }
-            });
-        });
-        io.socket.on("contacts", function contactsUpdateEvent(data){
-            $scope.$apply(function(){
-                $scope.contacts = [];
-            });
-            //music.setStreamType("system");
-            //music.play("login");
-            io.socket.get("/contacts/"+data.id, function(added_contact){
-                cordova.plugins.notification.local.schedule({
-                    title: "Вас добавили!",
-                    text: "К Вам добавился "+added_contact.contact.fio,
-                    sound: "file://music/incoming_contact.mp3",
-                    icon: added_contact.contact.avatar,
-                    badge: 1,
-                    data: { event:'contact_added',action:"#contacts" }
-                });
-                $scope.$apply(function(){
-                    $scope.contacts.push(added_contact);
-                });
-            });
-        });
+        io.socket.on("user", onUser);
+        io.socket.on("contacts", onContact);
         io.socket.get("/dialog/get_count_by_user",{user: Auth.getUser().id},function(data){
             console.log(data);
             $scope.$apply(function(){
@@ -334,12 +334,33 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*** Groupusers ***/
 clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, Auth, $location, callService){
     io.socket.on("reconnect",function(){
-        $timeout(function () {
-            $scope.initController();
-        }, 0);
+       window.location.reload();
     });
     $('ul.tabs').tabs();
     var w = $( window ).width() * 0.80;
@@ -359,6 +380,18 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
     $scope.group = {};
     $scope.contactsCount = 0;
     $('select').material_select();
+    function onUser(msg){
+        angular.forEach($scope.contacts, function(row, k){
+            if(row.id == msg.data.id){
+                $scope.$apply(function(){
+                    $scope.contacts[k] = msg.data;
+                });
+            }
+        });
+    }
+    $scope.$on("$destroy", function(){
+        io.socket.off("user", onUser);
+    });
     $scope.initController = function(){
         $scope.showPreloader = true;
         io.socket.get("/contacts/get_group",{group: $scope.groupId}, function(data){
@@ -369,15 +402,7 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
                 $scope.group = data.group;
             });
         });
-        io.socket.on("user", function contactUpdateEvent(msg){
-            angular.forEach($scope.contacts, function(row, k){
-                if(row.id == msg.data.id){
-                    $scope.$apply(function(){
-                        $scope.contacts[k] = msg.data;
-                    });
-                }
-            });
-        });
+        io.socket.on("user", onUser);
         io.socket.on("contacts", function contactsUpdateEvent(data){
             console.log("oncontacts",data);
         });
@@ -387,7 +412,7 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
             });
         });
         io.socket.get("/dialog/get_count_by_user",{user: Auth.getUser().id},function(data){
-            console.log(data);
+            //console.log(data);
             $scope.$apply(function(){
                 $scope.dialogsCount = data.count;
             });

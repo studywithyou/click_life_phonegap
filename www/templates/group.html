@@ -57,7 +57,7 @@
                 </li>
             </ul>
         </div>
-        <a href="#contacts/1" data-activates="slide-out" class="button-collapse"><i class="icon-menu"></i></a>
+        <a  data-activates="slide-out" class="button-collapse"><i class="icon-menu"></i></a>
     </div>
 </nav>
 <div class="row yellow darken-2 tbs ng-scope">
@@ -70,7 +70,7 @@
 </div>
 <div id="all_contacts" class="col s12 contactsingroup">
     <ul class="collection">
-        <li ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[user.is_online == 1]"
+        <li ng-class="{true:'online collection-item avatar', false:'offline collection-item avatar'}[gu.user.is_online == 1]"
             ng-repeat="gu in contacts"
             on-finish-render="ngRepeatFinished">
             <img ng-src="{{gu.user.avatar}}" alt="" ng-click="chatWith(gu.user)" class="circle">
@@ -78,10 +78,10 @@
             <p>
                 {{gu.user.fio}}
             </p>
-            <a class="secondary-content dropdown-button" data-activates='dropdown_{{user.id}}'>
+            <a class="secondary-content dropdown-button" data-activates='dropdown_{{gu.user.id}}'>
                 <i class="material-icons">more_vert</i>
             </a>
-            <ul id='dropdown_{{user.id}}' class='dropdown-content usermenu'>
+            <ul id='dropdown_{{gu.user.id}}' class='dropdown-content usermenu'>
                 <li>
                     <a ng-click="chatWith(gu.user)">
                         <i class="material-icons small">chat</i>

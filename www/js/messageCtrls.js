@@ -44,6 +44,7 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
     io.socket.on("typing", typingEvent);
     // on new message
     function messageRecievedEvent(data){
+        console.log("messagerecievedEvent")
         if(data.dialog == $scope.dialogId){
             if(data.from.id !=  Auth.getUser().id){
                 //update readed status, msg = incoming

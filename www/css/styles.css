@@ -118,15 +118,15 @@ input[type=text]:focus:not([readonly]), input[type=password]:focus:not([readonly
 }
 
 input[type=text], input[type=password], input[type=email], input[type=url], input[type=time], input[type=date], input[type=datetime-local], input[type=tel], input[type=number], input[type=search], textarea.materialize-textarea {
-    background-color: transparent;
-    border: none;
-    border-bottom: 1px solid #f3f3f4;
-    border-radius: 0;
-    outline: none;
-    height: 3rem;
-    width: 100%;
-    font-size: 1rem;
-    margin: 0 0 15px 0;
+    /* background-color: transparent; */
+    /* border: none; */
+    /* border-bottom: 1px solid #f3f3f4; */
+    /* border-radius: 0; */
+    /* outline: none; */
+    /* height: 3rem; */
+    /* width: 100%; */
+    /* font-size: 1rem; */
+    /* margin: 0 0 15px 0; */
     padding: 0;
     box-shadow: none;
     -webkit-box-sizing: content-box;
@@ -160,12 +160,13 @@ a.pagename.center {
     background: transparent url("../img/icon_camera.png") center center no-repeat;
     color: transparent;
     border: none;
-    height: 130px;
+    /* height: 130px; */
     display: block;
-    width: 100%;
+    width: 126px;
     background-size: 17%;
     position: relative;
     outline: none;
+    max-height: 200px;
 }
 
 .photo_upload::before {
@@ -1053,21 +1054,21 @@ a.rr {
 }
 
 input[type=text], input[type=password], input[type=email], input[type=url], input[type=time], input[type=date], input[type=datetime-local], input[type=tel], input[type=number], input[type=search], textarea.materialize-textarea {
-    background-color: transparent;
-    border: none;
-    border-bottom: 1px solid #26a69a;
-    border-radius: 0;
-    outline: none;
-    height: 3rem;
-    width: 100%;
-    font-size: 1rem;
-    margin: 0 0 15px 0;
-    padding: 0;
-    box-shadow: none;
-    -webkit-box-sizing: content-box;
+    /* background-color: transparent; */
+    /* border: none; */
+    /* border-bottom: 1px solid #26a69a; */
+    /* border-radius: 0; */
+    /* outline: none; */
+    /* height: 3rem; */
+    /* width: 100%; */
+    /* font-size: 1rem; */
+    /* margin: 0 0 15px 0; */
+    /* padding: 0; */
+    /* box-shadow: none; */
+    /* -webkit-box-sizing: content-box; */
     -moz-box-sizing: content-box;
-    box-sizing: content-box;
-    transition: all .3s;
+    /* box-sizing: content-box; */
+    /* transition: all .3s; */
 }
 
 #messages {
@@ -1498,4 +1499,34 @@ span.contactgroupname {
 
 #all_contacts .contactsingroup {
     margin-top:67px;
+}
+
+
+img.photo_upload { 
+    background: transparent url("../img/icon_camera.png") center center no-repeat;
+    color: transparent;
+    border: none;
+    /* height: 130px; */
+    display: block;
+    width: 126px;
+    height:126px;
+    background-size: 17%;
+    position: relative;
+    outline: none;
+    max-height: 200px;
+}
+
+
+.p_profile .input-field label {
+    color: #9e9e9e;
+    position: static;
+    top: 22.8rem;
+    left: 0.75rem;
+    font-size: 1rem;
+    cursor: text;
+    -webkit-transition: .2s ease-out;
+    -moz-transition: .2s ease-out;
+    -o-transition: .2s ease-out;
+    -ms-transition: .2s ease-out;
+    transition: .2s ease-out;
 }

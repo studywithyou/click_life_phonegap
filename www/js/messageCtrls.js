@@ -17,10 +17,7 @@ clicklife.controller("ChatCtrl", function($scope,Auth, $routeParams,callService,
     io.socket.on("update_message_status", updateMessageStatus);
     //reconnect
     function reconnectEvent(){
-        $timeout(function () {
-            // 0 ms delay to reload the page.
-            initDialog();
-        }, 0);
+       window.location.reload();
     };
     io.socket.on("reconnect",reconnectEvent);
     //typing event

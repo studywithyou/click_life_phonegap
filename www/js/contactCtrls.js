@@ -51,7 +51,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
         });
     }
     function onUser(msg){
-        console.log("userEvent", msg, $scope.contacts);
+       // console.log("userEvent", msg, $scope.contacts);
         angular.forEach($scope.contacts, function(row, k){
             if(row.contact.id == msg.data.id){
                 if(msg.data.is_online != $scope.contacts[k].contact.is_online){
@@ -156,7 +156,6 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
             return window.showToast("Ваш запрос отправлен",2000);
         });
     };
-
     $scope.search_users = function(){
         io.socket.get("/user/search",{q: $scope.search_string}, function(results){
             $scope.search_string = "";
@@ -215,7 +214,6 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
             }
         });
     };
-
     /*** Add froup **/
     $scope.addGroup = function(){
         if(!$scope.groupname || !$scope.groupdescription){
@@ -357,9 +355,28 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
 
 /*** Groupusers ***/
 clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, Auth, $location, callService){
-    io.socket.on("reconnect",function(){
-       window.location.reload();
-    });
+    function onReconnect(){
+        window.location.reload();
+    }
+    function onUser(msg){
+        angular.forEach($scope.contacts, function(row, k){
+            if(row.user.id == msg.data.id){
+                $scope.$apply(function(){
+                    $scope.contacts[k] = msg.data;
+                });
+            }
+        });
+    }
+    function onContact(data){
+        console.log("oncontacts",data);
+    }
+    function onMessage(message){
+        window.showToast("Новое сообщение...");
+    }
+    io.socket.on("reconnect",onReconnect);
+    io.socket.on("user", onUser);
+    io.socket.on("new_contact", onContact);
+    io.socket.on("new_message", onMessage);
     $('ul.tabs').tabs();
     var w = $( window ).width() * 0.80;
     if(w > 500){
@@ -378,18 +395,8 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
     $scope.group = {};
     $scope.contactsCount = 0;
     $('select').material_select();
-    function onUser(msg){
-        angular.forEach($scope.contacts, function(row, k){
-            if(row.id == msg.data.id){
-                $scope.$apply(function(){
-                    $scope.contacts[k] = msg.data;
-                });
-            }
-        });
-    }
-    $scope.$on("$destroy", function(){
-        io.socket.off("user", onUser);
-    });
+
+
     $scope.initController = function(){
         $scope.showPreloader = true;
         io.socket.get("/contacts/get_group",{group: $scope.groupId}, function(data){
@@ -399,10 +406,6 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
                 $scope.contacts = data.users;
                 $scope.group = data.group;
             });
-        });
-        io.socket.on("user", onUser);
-        io.socket.on("contacts", function contactsUpdateEvent(data){
-            console.log("oncontacts",data);
         });
         io.socket.get("/contacts/get_count_by_user",{user: Auth.getUser().id},function(data){
             $scope.$apply(function(){
@@ -422,10 +425,14 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
             },false,100);
         });
     };
+
+
     $scope.groupname = $scope.group.name;
     $scope.groupicon = $scope.group.icon;
     $scope.groupdescription = $scope.group.description;
     $scope.editableGroup = $scope.group.id;
+
+
     $scope.editGroup = function(){
         $scope.groupname = $scope.group.name;
         $scope.groupicon = $scope.group.icon;
@@ -454,8 +461,6 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
             });
         }
     };
-
-
     /***
      * Chat with user
      */
@@ -490,5 +495,12 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
     $scope.chatWithGroup = function(){
         $location.path("/groupchat/"+$scope.groupId);
     };
+
+    $scope.$on("$destroy", function(){
+        io.socket.off("user", onUser);
+        io.socket.off("reconnect",onReconnect);
+        io.socket.off("new_message", onMessage);
+        io.socket.off("new_contact" , onContact);
+    });
 });
 

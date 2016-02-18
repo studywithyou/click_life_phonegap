@@ -186,6 +186,10 @@ clicklife.config(function($routeProvider){
             templateUrl:"templates/call.html",
             controller:"CallCtrl"
         }).
+        when("/settings", {
+            templateUrl:'templates/settings.html',
+            controller:'SettingsCtrl'
+         }).
         otherwise({
             redirectTo: '/login'
         });

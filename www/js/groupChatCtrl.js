@@ -45,7 +45,15 @@ clicklife.controller("GroupChatCtrl", function($scope,Auth, $routeParams,callSer
                 }, function(){});
                 data.readed = 1;
                 music.setStreamType(music.STREAM_SYSTEM);
-                music.play("new_message");
+                if(data.type == 'win'){
+                    music.play("money_add");
+                }else{
+                    if(data.type == "gift"){
+                        music.play("gift");
+                    }else{
+                        music.play("new_message");
+                    }
+                }
             }
             $scope.messages.push(data);
             if($scope.messages.length > 100){
@@ -167,6 +175,31 @@ clicklife.controller("GroupChatCtrl", function($scope,Auth, $routeParams,callSer
     };
     $scope.emojiMessage.replyToUser = $scope.sendMessage;
     $scope.sendGift = function(gift){
+        $scope.showPreloader = true;
+        $('#modal2').closeModal();
+        if(gift.price > Auth.getUser().balance){
+            window.showToast("На вашем счету недостаточно кликов","long","center");
+            $scope.showPreloader = false;
+            return false;
+        }
+        navigator.notification.confirm(
+            'C Вашего счета будет списано '+gift.price+' кликов. В случае, если Ваш подарок будет призовым, Вы получите бонус.', // message
+            function(answer){
+                if(answer == '1'){
+                    //delete
+                    io.socket.get("/gifts/send_gift",{from: Auth.getUser().id, gift: gift.id, dialog: $scope.dialogId}, function(response){
+                        //gift should be sent
+                        if(response.error){
+                            return window.showToast(response.error,"long", "center");
+                        }else{
+                            return window.showToast("Подарок отправлен","short", "bottom");
+                        }
+                    });
+                }
+            },
+            'Отправить подарок ?',           // title
+            ['Да','Нет']     // buttonLabels
+        );
 
     };
     // send image message to server
@@ -233,7 +266,7 @@ clicklife.controller("GroupChatCtrl", function($scope,Auth, $routeParams,callSer
 
                 $scope.showPreloader = false;
                 $scope.$apply();
-                return Materialize.toast("Пользователь вышел из сети");
+                return window.showToast("Пользователь вышел из сети");
             }
             callService.callTo(data.user);
         });

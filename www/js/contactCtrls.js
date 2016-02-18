@@ -3,13 +3,7 @@
  Contacts
  *********/
 clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$timeout, Auth, $location, callService){
-    io.socket.on("reconnect",function(){
 
-        $timeout(function () {
-            // 0 ms delay to reload the page.
-            $route.reload();
-        }, 0);
-    });
     $('ul.tabs').tabs();
 
     var w = $( window ).width() * 0.80;
@@ -40,7 +34,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
     if($routeParams.isGroups && $routeParams.isGroups == '1'){
         $('ul.tabs').tabs('select_tab', 'groups');
     }
-    $scope.initController = function(){
+    function getContacts(){
         $scope.showPreloader = true;
         io.socket.get("/contacts/get_by_user",{user: Auth.getUser().id}, function(data){
             $scope.$apply(function(){
@@ -49,11 +43,17 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                 $scope.contacts = data;
             });
         });
+    }
+    function getGroups(){
         io.socket.get("/contacts/get_groups_by_user",{user: Auth.getUser().id}, function(gData){
             $scope.$apply(function(){
                 $scope.groups = gData;
             });
         });
+    }
+    $scope.initController = function(){
+        getContacts();
+        getGroups();
         io.socket.on("user", function contactUpdateEvent(msg){
             console.log("userEvent", msg, $scope.contacts);
             angular.forEach($scope.contacts, function(row, k){
@@ -72,6 +72,24 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                     $scope.contacts[k].contact = msg.data;
                     $scope.$apply();
                 }
+            });
+        });
+        io.socket.on("contacts", function contactsUpdateEvent(data){
+            $scope.$apply(function(){
+                $scope.contacts = [];
+            });
+            //music.setStreamType("system");
+            //music.play("login");
+            io.socket.get("/contacts/"+data.id, function(added_contact){
+                cordova.plugins.notification.local.schedule({
+                    title: "Вас добавили!",
+                    text: "К Вам добавился новый контакт ",
+                    sound: "file://music/login.mp3",
+                    icon: added_contact.contact.avatar,
+                    badge: 1,
+                    data: { event:'contact_added',action:"#contacts" }
+                });
+                $scope.contacts.push(added_contact);
             });
         });
         io.socket.get("/dialog/get_count_by_user",{user: Auth.getUser().id},function(data){
@@ -118,7 +136,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                             music.play("logoff");
                             // window.plugin.notification.local.add({ text: 'Пользователь вышел из сети',title:data.created.contact.fio+ "(("  });
                         }
-                        Materialize.toast("Контакт добавлен",1000);
+                        window.showToast("Контакт добавлен",1000);
                         $scope.contacts.push(data.created);
                     });
                 });
@@ -135,7 +153,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
             to: $scope.requestNumber
         },function(data){
             $scope.requestNumber = "";
-            return Materialize.toast("Ваш запрос отправлен",2000);
+            return window.showToast("Ваш запрос отправлен",2000);
         });
     };
 
@@ -158,7 +176,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                 }
             }
             if(!results){
-                return Materialize.toast("Ничего не найдено!",1000);
+                return window.showToast("Ничего не найдено!",1000);
             }
             $scope.search = r;
             $scope.$apply();
@@ -174,7 +192,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
             }
         }
         if(!checked){
-            Materialize.toast("Контакт уже есть в Вашем списке",1000);
+            window.showToast("Контакт уже есть в Вашем списке",1000);
             return false;
         }
         io.socket.get("/contacts/add_contact_by_id", {contact: user.id, user: Auth.getUser().id}, function(data){
@@ -192,7 +210,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                         music.play("logoff");
                     }
                     $scope.contacts.push(data.created);
-                    Materialize.toast("Контакт добавлен",1000);
+                    window.showToast("Контакт добавлен",1000);
                 });
             }
         });
@@ -201,7 +219,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
     /*** Add froup **/
     $scope.addGroup = function(){
         if(!$scope.groupname || !$scope.groupdescription){
-            return Materialize.toast("Заполните название и описание группы",1000);
+            return window.showToast("Заполните название и описание группы",1000);
         }
         if($scope.editableGroup){
             io.socket.get("/contacts/edit_group",{
@@ -211,7 +229,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                 id: $scope.editableGroup
             }, function(data){
                 if(data.error){
-                    return Materialize.toast(data.error,2000);
+                    return window.showToast(data.error,2000);
                 }
                 $scope.group = data.created;
             });
@@ -222,7 +240,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
                 icon: $scope.groupicon
             }, function(data){
                 if(data.error){
-                    return Materialize.toast(data.error,2000);
+                    return window.showToast(data.error,2000);
                 }
                 $scope.groupname = "";
                 $scope.groupdescription = "";
@@ -256,7 +274,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
             contact: $scope.editableUser,
             group: $scope.userGroup.id
         },function(data){
-            return Materialize.toast(data.message,1000);
+            return window.showToast(data.message,1000);
         });
     };
     /***
@@ -264,7 +282,7 @@ clicklife.controller("ContactsCtrl", function($scope,$route,$routeParams,music,$
      */
     $scope.chatWith = function(user){
         //location.href="#chat/"+user.contact.id;
-        Materialize.toast("Подождите...",560);
+        window.showToast("Подождите...",560);
         io.socket.get("/dialog/join",{ user: user.id}, function(data){
             console.log(data);
             location.href="#dialog/"+data.dialog;
@@ -358,6 +376,9 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
                 }
             });
         });
+        io.socket.on("contacts", function contactsUpdateEvent(data){
+            console.log("oncontacts",data);
+        });
         io.socket.get("/contacts/get_count_by_user",{user: Auth.getUser().id},function(data){
             $scope.$apply(function(){
                 $scope.contactsCount = data.count;
@@ -390,7 +411,7 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
     /*** Add froup **/
     $scope.addGroup = function(){
         if(!$scope.groupname || !$scope.groupdescription){
-            return Materialize.toast("Заполните название и описание группы",1000);
+            return window.showToast("Заполните название и описание группы",1000);
         }
         if($scope.editableGroup){
             io.socket.get("/contacts/edit_group",{
@@ -400,7 +421,7 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
                 id: $scope.editableGroup
             }, function(data){
                 if(data.error){
-                    return Materialize.toast(data.error,2000);
+                    return window.showToast(data.error,2000);
                 }
                 $scope.$apply(function(){
                     $scope.group= data.created[0];
@@ -415,7 +436,7 @@ clicklife.controller("GroupCtrl", function($scope,$routeParams,music,$timeout, A
      */
     $scope.chatWith = function(user){
         //location.href="#chat/"+user.contact.id;
-        Materialize.toast("Подождите...",560);
+        window.showToast("Подождите...",560);
         io.socket.get("/dialog/join",{ user: user.id}, function(data){
             console.log(data);
             location.href="#dialog/"+data.dialog;

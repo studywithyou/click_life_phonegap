@@ -77,7 +77,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
     }
 
     $scope.contactIsBusy = function(name){
-        Materialize.toast("Пользователь "+name+" не может взять трубку");
+        window.showToast("Пользователь "+name+" не может взять трубку");
         if($scope.callInProgress){ return false; }
 
         if($scope.isCalling && name == $scope.contactName){
@@ -93,7 +93,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
     $scope.callEnded = function(reason){
         music.stopAll();
         //will calls on call will be end
-        Materialize.toast(reason,1000);
+        window.showToast(reason,1000);
         music.setStreamType("ring");
         music.play("call_busy",0);
         $location.path("/contacts");
@@ -143,7 +143,7 @@ clicklife.controller("CallCtrl", function($scope,$rootScope,$location,$interval,
         // if call in progress ends call, else send ignore key
     $scope.goToDialog = function(){
         //location.href="#chat/"+user.contact.id;
-        Materialize.toast("Подождите...",560);
+        window.showToast("Подождите...",560);
         io.socket.get("/dialog/join",{ user: $scope.contactData.id}, function(data){
             //console.log(data);
             if($scope.callInProgress){

@@ -26,7 +26,7 @@ clicklife.controller("LoginCtrl", function($scope,$location,Auth){
             password: Auth.getUser().password
         },function(data){
             if(data.error){
-                return Materialize.toast(data.error,2000);
+                return window.showToast(data.error,2000);
             }else{
                 console.log("Auth success");
                 Auth.setUser(data);
@@ -36,7 +36,7 @@ clicklife.controller("LoginCtrl", function($scope,$location,Auth){
     }
     function login(){
         if(!$scope.username || !$scope.password){
-            Materialize.toast('Все поля необходимо заполнить!', 2000) // 4000 is the duration of the toast
+            window.showToast('Все поля необходимо заполнить!', 2000) // 4000 is the duration of the toast
             return false;
         }
         io.socket.post("/user/login",{
@@ -44,7 +44,7 @@ clicklife.controller("LoginCtrl", function($scope,$location,Auth){
             password: $scope.password
         },function(data){
             if(data.error){
-                return Materialize.toast(data.error,2000);
+                return window.showToast(data.error,2000);
             }else{
 
             }
@@ -62,7 +62,7 @@ clicklife.controller("LoginCtrl", function($scope,$location,Auth){
 /****************************************************************************
  * Register
  */
-clicklife.controller("RegisterCtrl", function($scope, $location, Auth){
+clicklife.controller("RegisterCtrl", function($scope, $location, Auth, $timeout){
     $scope.username = "";
     $scope.fio = "";
     $scope.email = "";
@@ -72,24 +72,24 @@ clicklife.controller("RegisterCtrl", function($scope, $location, Auth){
 
     $(".photo_upload").change(function(){
         $(this).addClass("active");
-        Materialize.toast("Фото выбрано",2000);
+        window.showToast("Фото выбрано",2000);
     });
     $scope.register = function(){
 
         if(!$scope.rules){
-            return Materialize.toast("Примите правила сервиса",1500);
+            return window.showToast("Примите правила сервиса",1500);
         }
         if(!$scope.username){
-            return Materialize.toast("Введите номер телефона",1500);
+            return window.showToast("Введите номер телефона",1500);
         }
         if(!$scope.fio){
-            return Materialize.toast("Введите Ваши ФИО",1500);
+            return window.showToast("Введите Ваши ФИО",1500);
         }
         if(!$scope.email){
-            return Materialize.toast("Введите Ваш email",1500);
+            return window.showToast("Введите Ваш email",1500);
         }
         if(!$scope.password){
-            return Materialize.toast("Введите Ваш пароль",1500);
+            return window.showToast("Введите Ваш пароль",1500);
         }
 
         io.socket.post("/user/register",{
@@ -100,11 +100,13 @@ clicklife.controller("RegisterCtrl", function($scope, $location, Auth){
 
         },function(data){
             if(data.error){
-                return Materialize.toast(data.error,2000);
+                return window.showToast(data.error,2000);
             }
             Auth.setUser(data);
             console.log(data.id);
-            $location.path("/confirmation");
+            $timeout(function(){
+                $location.path("/confirmation");
+            },0);
         });
 
     };
@@ -114,7 +116,7 @@ clicklife.controller("RegisterCtrl", function($scope, $location, Auth){
 /****************************************************************************
  Confirm
  *********/
-clicklife.controller("ConfirmCtrl", function($scope, $location, Auth){
+clicklife.controller("ConfirmCtrl", function($scope, $location, Auth, $timeout){
     if(!Auth.isLoggedIn()){
         $location.path("/register");
     }
@@ -128,23 +130,25 @@ clicklife.controller("ConfirmCtrl", function($scope, $location, Auth){
         $scope.confirm_tries++;
         var tries = 10 - $scope.confirm_tries;
         if(tries == 0){
-            Materialize.toast("Вы исчерпали число попыток, для ввода кода",2000);
+            window.showToast("Вы исчерпали число попыток, для ввода кода",2000);
             $location.path("/register");
         }
         var add_txt = "Осталось попыток: "+tries;
         if(!$scope.confirm_code){
-            return Materialize.toast("Пожалуйста, введите проверочный код. "+ add_txt,2000);
+            return window.showToast("Пожалуйста, введите проверочный код. "+ add_txt,2000);
         }
         if($scope.confirm_code != code_sent){
             $scope.confirm_code = "";
             console.log($scope.confirm_code);
             console.log(code_sent);
-            return Materialize.toast("Код введен неверно. "+add_txt,2000);
+            return window.showToast("Код введен неверно. "+add_txt,2000);
         }
         io.socket.post("/user/activate",{
             user:code_sent
         },function(data){
-            $location.path("/confirmation_success");
+            $timeout(function(){
+                $location.path("/confirmation_success");
+            },0);
         });
     };
 });

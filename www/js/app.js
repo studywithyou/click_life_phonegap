@@ -86,11 +86,33 @@ jQuery(function($){
     jqComponents.initTogler();
     $(".photo_upload").change(function(){
         $(this).addClass("active");
-        Materialize.toast("Фото выбрано",2000);
+        window.showToast("Фото выбрано",2000);
     });
 
     if (window.cordova) {
         document.addEventListener('deviceready', function () {
+            window.showToast = function(message, duration, position){
+                if(!duration){
+                    duration = 'long';
+                }else{
+                    if(duration != 'short' && duration != 'long'){
+                        duration = 'short';
+                    }
+                }
+                if(!position){
+                    position = 'bottom';
+                }else{
+                    if(position!='bottom' && position!= 'top' && position != 'center'){
+                        position = 'bottom';
+                    }
+                }
+                if(typeof(window.plugins.toast) == 'undefined'){
+                    Materialize.toast(message,1000);
+                }else{
+                    window.plugins.toast.show(message, duration, position);
+                }
+            };
+
             angular.bootstrap(document.body, ['clicklife']);
         }, false);
     } else {
@@ -101,11 +123,13 @@ jQuery(function($){
 
 var clicklife = angular.module("clicklife",['ngRoute', 'ngSanitize', 'emojiApp']);
 
+
 clicklife.config(function($routeProvider){
     $routeProvider.
         when('/login', {
             templateUrl: 'templates/login.html',
-            controller: 'LoginCtrl'
+            controller: 'LoginCtrl',
+            access: true
         }).
         when('/logout', {
             templateUrl: 'templates/logout.html',
@@ -113,15 +137,18 @@ clicklife.config(function($routeProvider){
         }).
         when("/register",{
             templateUrl: 'templates/register.html',
-            controller:'RegisterCtrl'
+            controller:'RegisterCtrl',
+            access: true
         }).
         when("/confirmation",{
             templateUrl: 'templates/confirm.html',
-            controller:'ConfirmCtrl'
+            controller:'ConfirmCtrl',
+            access: true
         }).
         when("/confirmation_success",{
             templateUrl: 'templates/confirm_success.html',
-            controller:'ConfirmCtrl'
+            controller:'ConfirmCtrl',
+            access: true
         }).
         when("/contacts/:isGroups?",{
             templateUrl:'templates/contacts.html',
@@ -162,6 +189,8 @@ clicklife.config(function($routeProvider){
         otherwise({
             redirectTo: '/login'
         });
+
+
 });
 /***
  * initialization
@@ -184,12 +213,16 @@ clicklife.run(function($rootScope,$location, callService) {
 });
 
 clicklife.run(function($rootScope, $location, Auth){
-    $rootScope.$on('$routeChangeStart', function (event) {
+    $rootScope.$on('$routeChangeStart', function (event, next, current) {
         $(".drag-target").remove();
         if (!Auth.isLoggedIn()) {
-            console.log('DENY');
-            event.preventDefault();
-            $location.path('/login');
+            if(next.access){
+                console.log("Allow unregistered");
+            }else{
+                console.log('DENY', event, next, current);
+                event.preventDefault();
+                $location.path('/login');
+            }
         }
         else {
 
@@ -213,19 +246,10 @@ clicklife.run(function($rootScope, $interval,$timeout, msg, music,$location,Auth
         }
     }
     function onReconnect(transport, numAttempts){
-        console.log(transport, numAttempts);
-        music.setStreamType("system");
-        music.play("login",false);
-        //subscribe to personal chanel
-        if(Auth.isLoggedIn()){
-            io.socket.get("/user/personal_chanel",{username: Auth.getUser().username}, function(){
-                console.log("subscribed to personal channel");
-            });
-            //необходимо обновить данные не дошедшие во время отключения
-        }
+        window.location.reload();
     }
     function onDisconnect(){
-        Materialize.toast("Связь с сервером потеряна, попытка повторного подключения",3000);
+        window.showToast("Связь с сервером потеряна, попытка повторного подключения",3000);
         music.setStreamType("system");
         music.play("custom",false,0);
         io.socket.off("connect", onConnect);//он нужен только для первого раза
@@ -234,7 +258,7 @@ clicklife.run(function($rootScope, $interval,$timeout, msg, music,$location,Auth
     io.socket.on("reconnect", onReconnect);
     io.socket.on("reconnecting", function(numAttempts){
         if(numAttempts % 2 == 0){
-            Materialize.toast("Подключение... ",3000);
+            window.showToast("Подключение... ",3000);
             music.setStreamType("system");
             music.play("call_ended",false,0);
         }

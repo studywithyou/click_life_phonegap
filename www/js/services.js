@@ -27,7 +27,7 @@ clicklife.factory("Auth", function($interval){
                 password: storage.user.password
             },function(data){
                 if(data.error){
-                    return Materialize.toast(data.error,2000);
+                    return window.showToast(data.error,2000);
                 }else{
                     console.log("Updated login status");
                     storage.user = data;
